@@ -28,7 +28,8 @@ export class Sound {
       const data = this.noise.getChannelData(0)
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume()
+    // Safari also has an 'interrupted' state, which it enters when the tab is hidden.
+    if (this.ctx.state !== 'running') void this.ctx.resume()
   }
 
   setMuted(muted: boolean) {

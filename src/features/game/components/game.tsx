@@ -43,6 +43,21 @@ const PAD_POSITIONS = [
   'right-3 bottom-3',
 ]
 
+// In touch mode each pad fills its quarter of the screen, so no touch is wasted.
+const TOUCH_PADS = [
+  'top-0 left-0 items-start justify-start',
+  'top-0 right-0 items-start justify-end',
+  'bottom-0 left-0 items-end justify-start',
+  'right-0 bottom-0 items-end justify-end',
+]
+
+const TOUCH_BADGES = [
+  'rounded-br-[2rem] border-r-[3px] border-b-[3px]',
+  'rounded-bl-[2rem] border-b-[3px] border-l-[3px]',
+  'rounded-tr-[2rem] border-t-[3px] border-r-[3px]',
+  'rounded-tl-[2rem] border-t-[3px] border-l-[3px]',
+]
+
 type Result = {
   levelIndex: number
   time: number
@@ -55,6 +70,17 @@ type Result = {
 
 type Screen = { name: 'menu' } | { name: 'play'; levelIndex: number }
 
+/**
+ * Asks whether a finger is the main pointer rather than reading the user agent,
+ * because iPads report themselves as Macs. A touch laptop's main pointer is its
+ * trackpad, so it stays on the keyboard layout until someone touches the screen.
+ */
+function startsInTouchMode() {
+  return (
+    navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches
+  )
+}
+
 export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [demoWorld] = useState(() => createWorld(LEVELS[0]))
@@ -62,7 +88,8 @@ export function Game() {
   const frameRef = useRef(0)
   const heldRef = useRef([false, false, false, false])
   const pressedKeys = useRef(new Set<string>())
-  const padHeld = useRef([false, false, false, false])
+  const padPointers = useRef(SEATS.map(() => new Set<number>()))
+  const padRefs = useRef<(HTMLButtonElement | null)[]>([])
   const fxRef = useRef(createEffects())
   const soundRef = useRef<Sound | null>(null)
   const timerRef = useRef<HTMLSpanElement>(null)
@@ -76,13 +103,14 @@ export function Game() {
   const [muted, setMuted] = useState(false)
   const [result, setResult] = useState<Result | null>(null)
   const [progress, setProgress] = useState<Progress>(loadProgress)
+  const [touchMode, setTouchMode] = useState(startsInTouchMode)
 
   useEffect(() => {
     soundRef.current = new Sound()
   }, [])
 
   const syncHeld = useCallback(() => {
-    const held = [...padHeld.current]
+    const held = padPointers.current.map((pointers) => pointers.size > 0)
     for (const code of pressedKeys.current) {
       for (const seat of KEY_SEATS[code] ?? []) held[seat] = true
     }
@@ -91,7 +119,7 @@ export function Game() {
 
   const releaseAll = useCallback(() => {
     pressedKeys.current.clear()
-    padHeld.current = [false, false, false, false]
+    padPointers.current.forEach((pointers) => pointers.clear())
     syncHeld()
     soundRef.current?.stopAll()
   }, [syncHeld])
@@ -139,6 +167,12 @@ export function Game() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
       soundRef.current?.unlock()
+      if (
+        KEY_SEATS[event.code] &&
+        padPointers.current.every((pointers) => pointers.size === 0)
+      ) {
+        setTouchMode(false)
+      }
       if (event.code === 'Escape') {
         togglePause()
         return
@@ -158,6 +192,14 @@ export function Game() {
       pressedKeys.current.delete(event.code)
       syncHeld()
     }
+    const onPointerDown = (event: PointerEvent) => {
+      soundRef.current?.unlock()
+      if (event.pointerType === 'touch') setTouchMode(true)
+    }
+    // A touch only counts as the gesture audio needs once the finger lifts.
+    const unlockSound = () => soundRef.current?.unlock()
+    // Safari ignores user-scalable=no, so pinches have to be refused here too.
+    const refuseGesture = (event: Event) => event.preventDefault()
     const onHidden = () => {
       if (
         document.hidden &&
@@ -170,11 +212,19 @@ export function Game() {
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
     window.addEventListener('blur', releaseAll)
+    window.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('pointerup', unlockSound)
+    window.addEventListener('touchend', unlockSound)
+    document.addEventListener('gesturestart', refuseGesture)
     document.addEventListener('visibilitychange', onHidden)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', releaseAll)
+      window.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('pointerup', unlockSound)
+      window.removeEventListener('touchend', unlockSound)
+      document.removeEventListener('gesturestart', refuseGesture)
       document.removeEventListener('visibilitychange', onHidden)
     }
   }, [releaseAll, startLevel, syncHeld, togglePause])
@@ -280,6 +330,7 @@ export function Game() {
       world.seats.forEach((seat, i) => {
         const bar = barRefs.current[i]
         if (bar) bar.style.transform = `scaleX(${seat.gas})`
+        padRefs.current[i]?.toggleAttribute('data-blasting', seat.blasting)
       })
     }
     frameRef.current = requestAnimationFrame(loop)
@@ -290,22 +341,109 @@ export function Game() {
     }
   }, [])
 
-  const setPad = (seat: number, down: boolean) => {
-    padHeld.current[seat] = down
+  // Tracked per finger, so a hand resting on a big pad can't cut off its blast.
+  const setPad = (seat: number, pointerId: number, down: boolean) => {
+    if (down) padPointers.current[seat].add(pointerId)
+    else padPointers.current[seat].delete(pointerId)
     syncHeld()
   }
 
   const level = screen.name === 'play' ? LEVELS[screen.levelIndex] : null
+  const hudButton = clsx(
+    'bg-cream border-ink cursor-pointer rounded-full border-[3px]',
+    touchMode ? 'p-3' : 'p-2',
+  )
 
   return (
-    <main className="bg-ink fixed inset-0 touch-none select-none">
+    <main className="bg-ink fixed inset-0 touch-none select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]">
       <canvas ref={canvasRef} className="absolute inset-0 size-full" />
 
-      {screen.name === 'menu' && <Menu progress={progress} onPlay={startLevel} />}
+      {screen.name === 'menu' && (
+        <Menu progress={progress} touchMode={touchMode} onPlay={startLevel} />
+      )}
 
       {level && screen.name === 'play' && (
         <>
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3">
+          {SEATS.map((seat, i) => (
+            <button
+              key={seat.key}
+              ref={(element) => {
+                padRefs.current[i] = element
+              }}
+              type="button"
+              aria-label={
+                touchMode
+                  ? `${seat.name} bean`
+                  : `${seat.name} bean, key ${seat.key}`
+              }
+              tabIndex={-1}
+              onPointerDown={(event) => {
+                event.currentTarget.setPointerCapture(event.pointerId)
+                setPad(i, event.pointerId, true)
+              }}
+              onPointerUp={(event) => setPad(i, event.pointerId, false)}
+              onPointerCancel={(event) => setPad(i, event.pointerId, false)}
+              onContextMenu={(event) => event.preventDefault()}
+              className={clsx(
+                'absolute flex cursor-pointer',
+                touchMode
+                  ? ['data-blasting:bg-mustard/20 group size-1/2', TOUCH_PADS[i]]
+                  : [
+                      'bg-cream/90 border-ink w-24 flex-col items-center gap-1 rounded-2xl border-[3px] p-2 active:brightness-90 md:w-28',
+                      PAD_POSITIONS[i],
+                    ],
+              )}
+            >
+              <span
+                className={
+                  touchMode
+                    ? clsx(
+                        'bg-cream/90 border-ink group-data-blasting:bg-mustard flex w-32 flex-col gap-2 p-3 md:w-44 md:p-4',
+                        TOUCH_BADGES[i],
+                      )
+                    : 'contents'
+                }
+              >
+                <span className="flex items-center gap-1">
+                  <BeanFace
+                    seat={i}
+                    className={touchMode ? 'size-12 shrink-0 md:size-16' : 'size-9'}
+                  />
+                  {touchMode ? (
+                    <span className="text-left text-sm leading-tight font-bold md:text-base">
+                      {seat.name}
+                    </span>
+                  ) : (
+                    <kbd className="bg-ink text-cream rounded-md px-2 py-0.5 text-sm font-bold">
+                      {seat.key}
+                    </kbd>
+                  )}
+                </span>
+                <span
+                  className={clsx(
+                    'bg-ink/20 w-full overflow-hidden rounded-full',
+                    touchMode ? 'h-3' : 'h-2',
+                  )}
+                >
+                  <span
+                    ref={(element) => {
+                      barRefs.current[i] = element
+                    }}
+                    className="bg-gas block h-full w-full origin-left"
+                  />
+                </span>
+              </span>
+            </button>
+          ))}
+
+          <div
+            className={clsx(
+              'pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2 p-3',
+              touchMode
+                ? 'flex-wrap justify-center pt-24 sm:px-36 sm:pt-3 md:px-48'
+                : 'justify-between',
+            )}
+          >
             <div className="bg-cream border-ink font-display flex items-center gap-3 rounded-full border-[3px] px-4 py-1 text-lg md:text-2xl">
               <span ref={timerRef} className="tabular-nums" aria-label="Time">
                 0:00.0
@@ -325,7 +463,7 @@ export function Game() {
                   soundRef.current?.setMuted(!muted)
                   setMuted(!muted)
                 }}
-                className="bg-cream border-ink cursor-pointer rounded-full border-[3px] p-2"
+                className={hudButton}
               >
                 {muted ? (
                   <VolumeX className="size-5" />
@@ -337,7 +475,7 @@ export function Game() {
                 type="button"
                 aria-label="Restart level"
                 onClick={() => startLevel(screen.levelIndex)}
-                className="bg-cream border-ink cursor-pointer rounded-full border-[3px] p-2"
+                className={hudButton}
               >
                 <RotateCcw className="size-5" />
               </button>
@@ -345,7 +483,7 @@ export function Game() {
                 type="button"
                 aria-label="Pause"
                 onClick={togglePause}
-                className="bg-cream border-ink cursor-pointer rounded-full border-[3px] p-2"
+                className={hudButton}
               >
                 <Pause className="size-5" />
               </button>
@@ -354,46 +492,14 @@ export function Game() {
 
           <p
             key={level.id}
-            className="animate-hint bg-cream border-ink pointer-events-none absolute top-36 left-1/2 w-max max-w-[85vw] -translate-x-1/2 rounded-xl border-2 px-3 py-1 text-center text-sm font-bold md:top-20 md:max-w-[50vw] md:text-base"
+            className={clsx(
+              'animate-hint bg-cream border-ink pointer-events-none absolute left-1/2 w-max max-w-[85vw] -translate-x-1/2 rounded-xl border-2 px-3 py-1 text-center text-sm font-bold md:top-20 md:max-w-[50vw] md:text-base',
+              touchMode ? 'top-40 sm:top-20' : 'top-36',
+            )}
           >
+            {touchMode && 'Hold your corner to blast. '}
             {level.hint}
           </p>
-
-          {SEATS.map((seat, i) => (
-            <button
-              key={seat.key}
-              type="button"
-              aria-label={`${seat.name} bean, key ${seat.key}`}
-              tabIndex={-1}
-              onPointerDown={(event) => {
-                soundRef.current?.unlock()
-                event.currentTarget.setPointerCapture(event.pointerId)
-                setPad(i, true)
-              }}
-              onPointerUp={() => setPad(i, false)}
-              onPointerCancel={() => setPad(i, false)}
-              onContextMenu={(event) => event.preventDefault()}
-              className={clsx(
-                'bg-cream/90 border-ink absolute flex w-24 cursor-pointer flex-col items-center gap-1 rounded-2xl border-[3px] p-2 active:brightness-90 md:w-28',
-                PAD_POSITIONS[i],
-              )}
-            >
-              <span className="flex items-center gap-1">
-                <BeanFace seat={i} className="size-9" />
-                <kbd className="bg-ink text-cream rounded-md px-2 py-0.5 text-sm font-bold">
-                  {seat.key}
-                </kbd>
-              </span>
-              <span className="bg-ink/20 h-2 w-full overflow-hidden rounded-full">
-                <span
-                  ref={(element) => {
-                    barRefs.current[i] = element
-                  }}
-                  className="bg-gas block h-full w-full origin-left"
-                />
-              </span>
-            </button>
-          ))}
 
           {paused && (
             <Panel title="Paused">

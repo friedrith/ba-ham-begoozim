@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import { Star } from 'lucide-react'
 
 import { LEVELS } from '../engine/levels'
@@ -7,6 +8,7 @@ import { BeanFace } from './bean-face'
 
 type MenuProps = {
   progress: Progress
+  touchMode: boolean
   onPlay: (levelIndex: number) => void
 }
 
@@ -29,9 +31,9 @@ export function Stars({ count }: { count: number }) {
   )
 }
 
-export function Menu({ progress, onPlay }: MenuProps) {
+export function Menu({ progress, touchMode, onPlay }: MenuProps) {
   return (
-    <div className="bg-ink/45 absolute inset-0 overflow-y-auto">
+    <div className="bg-ink/45 absolute inset-0 touch-pan-y overflow-y-auto overscroll-contain">
       <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-center gap-5 px-4 py-8">
         <header className="flex flex-col items-center gap-1 text-center">
           <h1 className="font-display text-sauce text-6xl leading-none [-webkit-text-stroke:2px_var(--color-ink)] [paint-order:stroke_fill] md:text-8xl">
@@ -76,27 +78,41 @@ export function Menu({ progress, onPlay }: MenuProps) {
           className="bg-cream border-ink rounded-2xl border-[3px] p-4"
         >
           <h2 className="font-display mb-2 text-xl">
-            Grab a corner of the keyboard
+            Grab a corner of the {touchMode ? 'screen' : 'keyboard'}
           </h2>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm md:grid-cols-4">
+          <ul
+            className={clsx(
+              'grid grid-cols-2 gap-x-4 gap-y-2 text-sm',
+              !touchMode && 'md:grid-cols-4',
+            )}
+          >
             {SEATS.map((seat, i) => (
               <li key={seat.key} className="flex items-center gap-2">
                 <BeanFace seat={i} className="size-8 shrink-0" />
-                <kbd className="bg-ink text-cream rounded-md px-2 py-0.5 font-bold">
-                  {seat.key}
-                </kbd>
+                {!touchMode && (
+                  <kbd className="bg-ink text-cream rounded-md px-2 py-0.5 font-bold">
+                    {seat.key}
+                  </kbd>
+                )}
                 <span className="leading-tight">{seat.name}</span>
               </li>
             ))}
           </ul>
           <p className="text-ink/80 mt-3 text-sm leading-snug">
+            {touchMode && 'Hold your corner to blast. '}
             <strong>Rear beans</strong> push forward, <strong>front beans</strong>{' '}
             push back, and a blast from one side turns the tub. Blast within a blink
             of each other for a <strong>harmony</strong>: a bigger shove, gas back,
-            and a chord. Solo? <kbd className="font-bold">←</kbd>{' '}
-            <kbd className="font-bold">→</kbd> work the rear and{' '}
-            <kbd className="font-bold">↓</kbd> the front. On a touch screen, use the
-            corner pads.
+            and a chord.
+            {!touchMode && (
+              <>
+                {' '}
+                Solo? <kbd className="font-bold">←</kbd>{' '}
+                <kbd className="font-bold">→</kbd> work the rear and{' '}
+                <kbd className="font-bold">↓</kbd> the front. On a touch screen, use
+                the corner pads.
+              </>
+            )}
           </p>
         </section>
       </div>

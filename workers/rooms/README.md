@@ -54,12 +54,18 @@ The free plan is enough to start. It fails rather than bills when it runs out.
    bun workers/rooms/probe.ts https://your-service.workers.dev 40
    ```
 
-   Look at `roomTickGapMs`. Ticks should arrive about every 16ms, and a worst case
-   above about 100ms would be felt in play. If they aren't steady, the fallback is one
-   always-on Fly.io machine, at about $3 a month, by writing a new host for `Room`.
+   Look at `snapshotGapMs`, measured where the snapshots arrive. They should come about
+   every 33ms, and a worst case above about 100ms would be felt in play. Don't rely on
+   `roomTickGapMs`, because a Worker's clock only moves on I/O. If snapshots aren't
+   steady, the fallback is one always-on Fly.io machine, at about $3 a month, by writing
+   a new host for `Room`.
 
 4. Set `NEXT_PUBLIC_ROOMS_URL` to that URL in the Vercel project, then redeploy the
    game. Without this step, nobody sees online play.
+
+The service refuses pages from any other site, so a new domain for the game has to be
+added to `ALLOWED_ORIGIN` in `index.ts` and the service deployed again. It answers those
+pages with a 403.
 
 To deploy on every merge, add the repository secrets `CLOUDFLARE_API_TOKEN` and
 `CLOUDFLARE_ACCOUNT_ID`, and set the repository variable `ROOMS_DEPLOY` to `true`.
@@ -90,10 +96,14 @@ few seconds. Taking the local service down mid-race is a good way to test this.
 
 ## What hasn't been tested
 
-- **Nothing here has run on real Cloudflare,** only local `wrangler dev`. Production
-  timer steadiness is the biggest unknown, which is what the probe is for.
-- **No real network.** Latency was simulated, and packet loss hasn't been tried.
-  WebSockets run over TCP, so a lost packet holds up everything behind it.
+- **Real Cloudflare, barely.** The probe has run twice, from one place, with all four
+  bots in one process. Round trips were about 50ms at the median and 100-127ms at p95.
+  Harmony was 88% both times, below the 95% seen locally, and nobody knows why yet.
+  Snapshots arrived in bursts, with a p95 gap of 115ms and a worst of 148ms, and those
+  could come from the room's timers, the network or the probe. Both runs came before
+  the fix that brought snapshots from 21 to 30 a second.
+- **Packet loss hasn't been tried.** WebSockets run over TCP, so a lost packet holds up
+  everything behind it.
 - **No people have played it.** The 50ms spread in player timing is an assumption. It
   also assumes a cue outside the game, like counting aloud. Syncing off the screen,
   where each player sees the same moment at a different time, drops harmony to 82% at

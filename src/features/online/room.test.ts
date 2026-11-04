@@ -203,6 +203,17 @@ describe('racing', () => {
     expect(goes).toHaveLength(1)
   })
 
+  test('sends 30 snapshots a second, though ticks don’t divide into that', () => {
+    const a = join('a')
+    startRacing(a)
+    const before = a.received.filter((message) => message.t === 'snap').length
+    run(3000)
+    const sent =
+      a.received.filter((message) => message.t === 'snap').length - before
+    expect(sent / 3).toBeGreaterThan(29)
+    expect(sent / 3).toBeLessThan(31)
+  })
+
   test('steps at 120 Hz whatever the timer does', () => {
     const a = join('a')
     say(a, { t: 'start', level: LEVELS[0].id })

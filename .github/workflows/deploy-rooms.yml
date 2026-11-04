@@ -17,7 +17,7 @@ concurrency: deploy-rooms
 
 jobs:
   deploy:
-    # Off until there is a Cloudflare account to deploy to: see workers/rooms/README.md.
+    # Off until the repository has Cloudflare secrets: see workers/rooms/README.md.
     if: vars.ROOMS_DEPLOY == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10

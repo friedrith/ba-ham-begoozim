@@ -54,7 +54,7 @@ const STORAGE_KEY = 'room'
 const CODE = /^\d{6}$/
 const CREATE_ATTEMPTS = 5
 const ALLOWED_ORIGIN =
-  /^(https:\/\/ba-ham-begoozim((-[a-z0-9-]+)?-interaction-dynamics)?\.vercel\.app|http:\/\/localhost:\d+)$/
+  /^(https:\/\/(gooz\.zendegi\.io|ba-ham-begoozim((-[a-z0-9-]+)?-interaction-dynamics)?\.vercel\.app)|http:\/\/localhost:\d+)$/
 
 /**
  * One room, on one machine, near whoever created it. The object hibernates between

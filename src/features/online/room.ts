@@ -195,7 +195,8 @@ export class Room {
       return
     }
     if (now >= this.snapshotDue) {
-      this.snapshotDue = now + SNAPSHOT_MS
+      // Kept to a beat, or waiting for a tick after each one would slow the rate down.
+      this.snapshotDue = Math.max(this.snapshotDue + SNAPSHOT_MS, now)
       this.sendSnapshot(world, now)
     }
     if (now >= this.checkpointDue) {

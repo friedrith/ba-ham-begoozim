@@ -46,6 +46,8 @@ class Bot {
   tickGaps: number[] = []
   snapshots = 0
   firstSnapshotAt = 0
+  lastSnapshotAt = 0
+  snapshotGaps: number[] = []
 
   constructor(
     index: number,
@@ -111,7 +113,10 @@ class Bot {
     }
     if (message.t === 'snap') {
       applySnapshot(world, message.w)
-      if (this.snapshots === 0) this.firstSnapshotAt = performance.now()
+      const arrived = performance.now()
+      if (this.snapshots === 0) this.firstSnapshotAt = arrived
+      else this.snapshotGaps.push(arrived - this.lastSnapshotAt)
+      this.lastSnapshotAt = arrived
       this.snapshots++
     }
   }
@@ -156,6 +161,13 @@ console.log(
         median: Math.round(percentile(bot.rtts, 0.5)),
         p95: Math.round(percentile(bot.rtts, 0.95)),
       })),
+      // Measured here rather than by the room, whose clock can stop between events.
+      snapshotGapMs: {
+        median: Math.round(percentile(bots[0].snapshotGaps, 0.5)),
+        p95: Math.round(percentile(bots[0].snapshotGaps, 0.95)),
+        p99: Math.round(percentile(bots[0].snapshotGaps, 0.99)),
+        worst: Math.round(Math.max(...bots[0].snapshotGaps)),
+      },
       roomTickGapMs: {
         median: percentile(bots[0].tickGaps, 0.5),
         p95: percentile(bots[0].tickGaps, 0.95),

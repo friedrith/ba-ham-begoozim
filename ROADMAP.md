@@ -7,7 +7,7 @@ Listed in the order we plan to build them.
 Put the game online under the `interaction-dynamics` Vercel account.
 
 - [x] Create the project under `interaction-dynamics` and link it to this repo
-- [ ] Deploy `master` to production and each PR to a preview URL
+- [x] Deploy `master` to production and each PR to a preview URL
 - [x] Add the live URL to the README
 
 **Done when** merging to `master` updates the live game without manual steps.
@@ -16,8 +16,8 @@ Put the game online under the `interaction-dynamics` Vercel account.
 
 Nothing checks a PR today. The scripts already exist, so this only needs wiring.
 
-- [ ] Run on every PR and on pushes to `master`, using Bun
-- [ ] Run `bun run ci` (lint and format check), `bun run typecheck`, `bun test`
+- [x] Run on every PR and on pushes to `master`, using Bun
+- [x] Run `bun run ci` (lint and format check), `bun run typecheck`, `bun test`
       and `bun run build`
 - [ ] Make the checks required before merging to `master`
 

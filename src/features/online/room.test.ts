@@ -144,6 +144,43 @@ describe('seats', () => {
   })
 })
 
+describe('stickers', () => {
+  const stickers = [['duck', 'star'], [], ['can'], []]
+
+  test('teammates see the stickers on the seats their owner holds', () => {
+    const a = join('a')
+    const b = join('b')
+    say(a, { t: 'seat', seat: 0, take: true })
+    say(a, { t: 'stickers', stickers } as ClientMessage)
+    const seats = b.last('room')?.seats
+    expect(seats?.[0].stickers).toEqual(['duck', 'star'])
+    expect(seats?.[2].stickers).toBeUndefined()
+  })
+
+  test('stickers go with the seat and come back with it', () => {
+    const a = join('a')
+    say(a, { t: 'stickers', stickers } as ClientMessage)
+    say(a, { t: 'seat', seat: 2, take: true })
+    expect(a.last('room')?.seats[2].stickers).toEqual(['can'])
+    say(a, { t: 'seat', seat: 2, take: false })
+    expect(a.last('room')?.seats[2].stickers).toBeUndefined()
+  })
+
+  test('stickers the game can’t draw are dropped', () => {
+    const a = join('a')
+    say(a, { t: 'seat', seat: 0, take: true })
+    room.receive(a, JSON.stringify({ t: 'stickers', stickers: [['duck', 'nope']] }))
+    expect(a.last('room')?.seats[0].stickers).toEqual(['duck'])
+    expect(a.closed).toBeNull()
+  })
+
+  test('stickers that aren’t a list are refused', () => {
+    const a = join('a')
+    room.receive(a, JSON.stringify({ t: 'stickers', stickers: 'duck' }))
+    expect(a.closed).toBe(CLOSE_ABUSE)
+  })
+})
+
 describe('names', () => {
   test('teammates see a seat’s owner by the name they chose', () => {
     const a = join('a')

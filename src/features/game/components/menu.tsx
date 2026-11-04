@@ -6,6 +6,7 @@ import {
   Github,
   MessageSquarePlus,
   Star,
+  Sticker,
   Trophy,
 } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -25,6 +26,7 @@ import {
   totalStars,
   type Progress,
 } from '../progress'
+import type { BeanStickers } from '../stickers'
 import { BeanFace } from './bean-face'
 import { LevelPreview } from './level-preview'
 import { RichText } from './rich-text'
@@ -38,10 +40,12 @@ const arrowButton =
 type MenuProps = {
   t: Messages
   progress: Progress
+  stickers: BeanStickers
   touchMode: boolean
   onPlay: (levelIndex: number) => void
   onLocaleChange: (locale: Locale) => void
   onFeedback: () => void
+  onStickers: () => void
   /** Shown between the levels and the instructions. */
   online?: React.ReactNode
 }
@@ -87,10 +91,12 @@ function nextLevelIndex(progress: Progress) {
 export function Menu({
   t,
   progress,
+  stickers,
   touchMode,
   onPlay,
   onLocaleChange,
   onFeedback,
+  onStickers,
   online,
 }: MenuProps) {
   const sliderRef = useRef<HTMLOListElement>(null)
@@ -156,6 +162,14 @@ export function Menu({
     <div className="bg-ink/45 absolute inset-0 touch-pan-y overflow-y-auto overscroll-contain">
       <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-center gap-4 px-4 py-6">
         <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onStickers}
+            className="bg-cream border-ink me-auto flex cursor-pointer items-center gap-1.5 rounded-full border-[3px] px-3 py-1 text-sm font-bold"
+          >
+            <Sticker aria-hidden="true" className="size-4" />
+            {t.stickers.open}
+          </button>
           <button
             type="button"
             aria-label={t.menu.feedback}
@@ -344,7 +358,11 @@ export function Menu({
           >
             {t.seats.map((seat, i) => (
               <li key={i} dir={t.dir} className="flex items-center gap-2">
-                <BeanFace seat={i} className="size-8 shrink-0" />
+                <BeanFace
+                  seat={i}
+                  stickers={stickers[i]}
+                  className="size-8 shrink-0"
+                />
                 {!touchMode && (
                   <kbd className="bg-ink text-cream rounded-md px-2 py-0.5 font-bold">
                     {seat.key}

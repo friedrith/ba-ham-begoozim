@@ -7,6 +7,7 @@ import {
   type GameEvent,
   type World,
 } from '../game/engine/world'
+import { noStickers, type BeanStickers } from '../game/stickers'
 import { createTally, tallyEvent, type Tally } from '../game/tally'
 import { dropOldInputs, forecast, type OwnInput } from './predict'
 import {
@@ -74,6 +75,8 @@ type SessionOptions = {
   token: string
   /** What to call this player. The room hears it on every connection. */
   name?: string
+  /** What this player stuck on their beans. Also said on every connection. */
+  stickers?: BeanStickers
   createSocket?: (url: string) => SocketLike
   now?: () => number
   /** Off in tests, which call `pump` themselves. */
@@ -111,6 +114,7 @@ export class OnlineSession {
   private readonly socketUrl: string
   private readonly token: string
   private name: string
+  private stickers: BeanStickers
 
   private socket: SocketLike | null = null
   private pumpTimer: ReturnType<typeof setInterval> | null = null
@@ -150,6 +154,7 @@ export class OnlineSession {
     this.socketUrl = `${options.url.replace(/^http/, 'ws')}/rooms/${options.code}/ws`
     this.token = options.token
     this.name = options.name ?? ''
+    this.stickers = options.stickers ?? noStickers()
     this.open()
     if (options.autoPump !== false) {
       this.pumpTimer = setInterval(() => this.pump(), PING_BURST_MS)
@@ -289,6 +294,11 @@ export class OnlineSession {
     this.send({ t: 'name', name })
   }
 
+  setStickers(stickers: BeanStickers) {
+    this.stickers = stickers
+    this.send({ t: 'stickers', stickers })
+  }
+
   leave() {
     this.send({ t: 'leave' })
     this.close()
@@ -333,6 +343,7 @@ export class OnlineSession {
       this.send({ t: 'hello', protocol: PROTOCOL, token: this.token })
       // Also when empty, since it may have been cleared while the line was down.
       this.send({ t: 'name', name: this.name })
+      this.send({ t: 'stickers', stickers: this.stickers })
       this.update({ status: 'open', error: null })
       this.pump()
     })

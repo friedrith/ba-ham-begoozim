@@ -13,6 +13,14 @@ import {
   type World,
 } from '../engine/world'
 import { formatNumber, type Messages } from '../i18n'
+import {
+  STICKER_EDGE,
+  STICKER_SCALE,
+  STICKER_SPOTS,
+  STICKERS,
+  type BeanStickers,
+  type StickerId,
+} from '../stickers'
 import type { Effects } from './effects'
 
 export const BEAN_COLORS = ['#e4572e', '#f2b632', '#2ec4b6', '#a05195']
@@ -530,12 +538,47 @@ function drawIcicle(
   ctx.restore()
 }
 
-/** A kidney-shaped bean, drawn pointing to the bow of the tub. */
-function drawBean(
+const stickerPaths = new Map<string, Path2D>()
+
+function stickerPath(d: string) {
+  let path = stickerPaths.get(d)
+  if (!path) {
+    path = new Path2D(d)
+    stickerPaths.set(d, path)
+  }
+  return path
+}
+
+/** Sits on a bean drawn at the origin, whatever scale the bean is drawn at. */
+export function drawStickers(ctx: CanvasRenderingContext2D, stickers: StickerId[]) {
+  stickers.forEach((id, i) => {
+    const { x, y, degrees } = STICKER_SPOTS[i]
+    const shapes = STICKERS[id]
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate((degrees * Math.PI) / 180)
+    ctx.scale(STICKER_SCALE, STICKER_SCALE)
+    ctx.fillStyle = '#fff'
+    ctx.strokeStyle = '#fff'
+    ctx.lineWidth = STICKER_EDGE
+    ctx.lineJoin = 'round'
+    for (const { d } of shapes) {
+      ctx.fill(stickerPath(d))
+      ctx.stroke(stickerPath(d))
+    }
+    for (const { d, fill } of shapes) {
+      ctx.fillStyle = fill
+      ctx.fill(stickerPath(d))
+    }
+    ctx.restore()
+  })
+}
+
+/** How a bean wobbles right now, as a scale to draw it at. */
+function wobbleBean(
   ctx: CanvasRenderingContext2D,
   seat: number,
   blasting: boolean,
-  empty: boolean,
   squash: number,
   clock: number,
 ) {
@@ -543,8 +586,16 @@ function drawBean(
     ? Math.sin(clock * 40) * 0.05
     : Math.sin(clock * 3 + seat) * 0.02
   const pop = squash * 1.1
-  ctx.save()
   ctx.scale(1 + pop + bounce, 1 - pop * 0.6 - bounce)
+}
+
+/** A kidney-shaped bean, drawn pointing to the bow of the tub. */
+function drawBean(
+  ctx: CanvasRenderingContext2D,
+  seat: number,
+  blasting: boolean,
+  empty: boolean,
+) {
   ctx.fillStyle = BEAN_COLORS[seat]
   ctx.strokeStyle = INK
   ctx.lineWidth = 3
@@ -595,10 +646,14 @@ function drawBean(
     ctx.arc(0, 1, 5, 0.25, Math.PI - 0.25)
     ctx.stroke()
   }
-  ctx.restore()
 }
 
-function drawTub(ctx: CanvasRenderingContext2D, world: World, fx: Effects) {
+function drawTub(
+  ctx: CanvasRenderingContext2D,
+  world: World,
+  fx: Effects,
+  stickers: BeanStickers,
+) {
   ctx.save()
   ctx.translate(world.x, world.y)
   ctx.rotate(world.angle)
@@ -654,13 +709,18 @@ function drawTub(ctx: CanvasRenderingContext2D, world: World, fx: Effects) {
     ctx.stroke()
   }
 
-  SEATS.forEach((seat, i) => {
-    ctx.save()
-    ctx.translate(seat.lx * 0.8, -seat.ly * 0.92)
-    const state = world.seats[i]
-    drawBean(ctx, i, state.blasting, state.gas < 0.1, fx.squash[i], world.clock)
-    ctx.restore()
-  })
+  // Stickers go on last, because the beans sit close enough to cover each other's cheeks.
+  for (const part of ['bean', 'stickers']) {
+    SEATS.forEach((seat, i) => {
+      const { blasting, gas } = world.seats[i]
+      ctx.save()
+      ctx.translate(seat.lx * 0.8, -seat.ly * 0.92)
+      wobbleBean(ctx, i, blasting, fx.squash[i], world.clock)
+      if (part === 'bean') drawBean(ctx, i, blasting, gas < 0.1)
+      else drawStickers(ctx, stickers[i])
+      ctx.restore()
+    })
+  }
   ctx.restore()
 }
 
@@ -668,6 +728,7 @@ export type SceneOptions = {
   font: string
   reducedMotion: boolean
   dir: Messages['dir']
+  stickers: BeanStickers
 }
 
 export function drawScene(
@@ -757,7 +818,7 @@ export function drawScene(
     ctx.fill()
   }
 
-  drawTub(ctx, world, fx)
+  drawTub(ctx, world, fx, options.stickers)
 
   // Icicles fall from above, so they come down over the tub.
   for (const icicle of world.icicles) {

@@ -16,6 +16,11 @@ export class Sound {
   /** Browsers only allow audio after a gesture, so call this from one. */
   unlock() {
     if (!this.ctx) {
+      // iOS otherwise treats Web Audio as ambient, which the ringer switch silences.
+      const { audioSession } = navigator as Navigator & {
+        audioSession?: { type: string }
+      }
+      if (audioSession) audioSession.type = 'playback'
       this.ctx = new AudioContext()
       this.master = this.ctx.createGain()
       this.master.gain.value = this.muted ? 0 : 0.7

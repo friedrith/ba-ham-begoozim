@@ -105,3 +105,20 @@ export function bankAt(course: Course, at: number, side: -1 | 1, gap: number): V
   const across = (s.hw + gap) * side
   return { x: s.x + s.nx * across, y: s.y + s.ny * across }
 }
+
+/** The points running along a bank, `gap` beyond the wall, between two fractions. */
+export function bankLine(
+  course: Course,
+  from: number,
+  to: number,
+  side: -1 | 1,
+  gap: number,
+): Vec[] {
+  const points: Vec[] = []
+  for (let i = indexAt(course, from); i <= indexAt(course, to); i++) {
+    const s = course.samples[i]
+    const across = (s.hw + gap) * side
+    points.push({ x: s.x + s.nx * across, y: s.y + s.ny * across })
+  }
+  return points
+}

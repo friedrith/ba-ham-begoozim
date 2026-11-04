@@ -13,18 +13,50 @@ export type LevelItem =
   | { kind: 'icicle'; at: number; offset?: number; period: number; phase?: number }
   | { kind: 'ice'; from: number; to: number }
 
-/** Set dressing on the banks. It's only drawn, so it never affects the game. */
+/**
+ * Set dressing on the banks. It's only drawn, so it never affects the game.
+ *
+ * Each theme is a different part of how water gets to a Persian bath, and the pieces
+ * on a bank are joined by one line that ends at a shelang dripping into the channel:
+ * - tile, the hammam: kashi, tas, aftabeh, dampayi, joined by a hose
+ * - brick, the qanat: qanat, badgir, aftabeh, dampayi, joined by clay pipe
+ * - iron, the motorkhaneh: manba, tolombeh, abgarmkon, dampayi, joined by copper pipe
+ * - frost, the winter yard: yakhchal, hawz, sarv, aftabeh, joined by a frozen hose
+ */
 export type Scenery = {
-  kind: 'shelang' | 'aftabeh' | 'samovar' | 'farsh' | 'dampayi'
+  kind:
+    | 'shelang'
+    | 'aftabeh'
+    | 'dampayi'
+    | 'kashi'
+    | 'tas'
+    | 'qanat'
+    | 'badgir'
+    | 'manba'
+    | 'tolombeh'
+    | 'abgarmkon'
+    | 'yakhchal'
+    | 'hawz'
+    | 'sarv'
   at: number
   /** -1 left bank, 1 right bank. */
   side: -1 | 1
 }
 
 /** How far beyond the wall scenery sits, measured to its centre. */
-export const SCENERY_GAP = 80
+export const SCENERY_GAP = 105
 /** The circle that any piece of scenery fits in, which has to stay clear of the water. */
-export const SCENERY_RADIUS = 65
+export const SCENERY_RADIUS = 90
+
+/** The stretch of each bank that its line runs along, from first piece to last. */
+export function sceneryRuns(scenery: readonly Scenery[]) {
+  return ([-1, 1] as const).flatMap((side) => {
+    const ats = scenery.filter((item) => item.side === side).map((item) => item.at)
+    return ats.length > 1
+      ? [{ side, from: Math.min(...ats), to: Math.max(...ats) }]
+      : []
+  })
+}
 
 export type LevelDef = {
   /** Also the key for this level's name, blurb and hint in `i18n/en.ts` and `i18n/fa.ts`. */
@@ -182,11 +214,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.34, 0.68],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: 1 },
-      { kind: 'aftabeh', at: 0.3, side: -1 },
-      { kind: 'farsh', at: 0.48, side: 1 },
-      { kind: 'samovar', at: 0.66, side: -1 },
-      { kind: 'dampayi', at: 0.84, side: 1 },
+      { kind: 'kashi', at: 0.06, side: 1 },
+      { kind: 'kashi', at: 0.15, side: -1 },
+      { kind: 'tas', at: 0.24, side: 1 },
+      { kind: 'dampayi', at: 0.33, side: -1 },
+      { kind: 'aftabeh', at: 0.42, side: 1 },
+      { kind: 'tas', at: 0.51, side: -1 },
+      { kind: 'dampayi', at: 0.6, side: 1 },
+      { kind: 'aftabeh', at: 0.69, side: -1 },
+      { kind: 'shelang', at: 0.78, side: 1 },
+      { kind: 'shelang', at: 0.87, side: -1 },
     ],
     items: [
       { kind: 'can', at: 0.07, offset: 0.5 },
@@ -231,11 +268,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.26, 0.5, 0.75],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: -1 },
-      { kind: 'farsh', at: 0.3, side: 1 },
-      { kind: 'samovar', at: 0.48, side: -1 },
-      { kind: 'dampayi', at: 0.66, side: 1 },
-      { kind: 'aftabeh', at: 0.84, side: -1 },
+      { kind: 'qanat', at: 0.06, side: -1 },
+      { kind: 'badgir', at: 0.15, side: 1 },
+      { kind: 'badgir', at: 0.24, side: -1 },
+      { kind: 'qanat', at: 0.33, side: 1 },
+      { kind: 'aftabeh', at: 0.42, side: -1 },
+      { kind: 'dampayi', at: 0.51, side: 1 },
+      { kind: 'qanat', at: 0.6, side: -1 },
+      { kind: 'badgir', at: 0.69, side: 1 },
+      { kind: 'shelang', at: 0.78, side: -1 },
+      { kind: 'shelang', at: 0.87, side: 1 },
     ],
     items: [
       { kind: 'whirl', at: 0.09, offset: 0.75, radius: 120, pull: 190 },
@@ -285,11 +327,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.27, 0.52, 0.76],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: 1 },
-      { kind: 'samovar', at: 0.3, side: -1 },
-      { kind: 'dampayi', at: 0.48, side: 1 },
-      { kind: 'aftabeh', at: 0.66, side: -1 },
-      { kind: 'farsh', at: 0.84, side: 1 },
+      { kind: 'badgir', at: 0.06, side: 1 },
+      { kind: 'qanat', at: 0.15, side: -1 },
+      { kind: 'qanat', at: 0.24, side: 1 },
+      { kind: 'aftabeh', at: 0.33, side: -1 },
+      { kind: 'dampayi', at: 0.42, side: 1 },
+      { kind: 'badgir', at: 0.51, side: -1 },
+      { kind: 'badgir', at: 0.6, side: 1 },
+      { kind: 'qanat', at: 0.69, side: -1 },
+      { kind: 'shelang', at: 0.78, side: 1 },
+      { kind: 'shelang', at: 0.87, side: -1 },
     ],
     items: [
       { kind: 'urchin', at: 0.08, offset: 0.6 },
@@ -341,11 +388,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.27, 0.54, 0.79],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: -1 },
-      { kind: 'dampayi', at: 0.3, side: 1 },
-      { kind: 'aftabeh', at: 0.48, side: -1 },
-      { kind: 'farsh', at: 0.66, side: 1 },
-      { kind: 'samovar', at: 0.84, side: -1 },
+      { kind: 'manba', at: 0.06, side: -1 },
+      { kind: 'abgarmkon', at: 0.15, side: 1 },
+      { kind: 'tolombeh', at: 0.24, side: -1 },
+      { kind: 'manba', at: 0.33, side: 1 },
+      { kind: 'abgarmkon', at: 0.42, side: -1 },
+      { kind: 'tolombeh', at: 0.51, side: 1 },
+      { kind: 'dampayi', at: 0.6, side: -1 },
+      { kind: 'abgarmkon', at: 0.69, side: 1 },
+      { kind: 'shelang', at: 0.78, side: -1 },
+      { kind: 'shelang', at: 0.87, side: 1 },
     ],
     items: [
       { kind: 'flame', at: 0.04, offset: 0.2 },
@@ -397,11 +449,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.24, 0.52, 0.81],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: 1 },
-      { kind: 'aftabeh', at: 0.3, side: -1 },
-      { kind: 'farsh', at: 0.48, side: 1 },
-      { kind: 'samovar', at: 0.66, side: -1 },
-      { kind: 'dampayi', at: 0.84, side: 1 },
+      { kind: 'abgarmkon', at: 0.06, side: 1 },
+      { kind: 'manba', at: 0.15, side: -1 },
+      { kind: 'tolombeh', at: 0.24, side: 1 },
+      { kind: 'abgarmkon', at: 0.33, side: -1 },
+      { kind: 'manba', at: 0.42, side: 1 },
+      { kind: 'dampayi', at: 0.51, side: -1 },
+      { kind: 'abgarmkon', at: 0.6, side: 1 },
+      { kind: 'tolombeh', at: 0.69, side: -1 },
+      { kind: 'shelang', at: 0.78, side: 1 },
+      { kind: 'shelang', at: 0.87, side: -1 },
     ],
     items: [
       { kind: 'flame', at: 0.05 },
@@ -450,11 +507,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.34, 0.67],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: -1 },
-      { kind: 'farsh', at: 0.3, side: 1 },
-      { kind: 'samovar', at: 0.48, side: -1 },
-      { kind: 'dampayi', at: 0.66, side: 1 },
-      { kind: 'aftabeh', at: 0.84, side: -1 },
+      { kind: 'yakhchal', at: 0.06, side: -1 },
+      { kind: 'sarv', at: 0.15, side: 1 },
+      { kind: 'sarv', at: 0.24, side: -1 },
+      { kind: 'hawz', at: 0.33, side: 1 },
+      { kind: 'hawz', at: 0.42, side: -1 },
+      { kind: 'yakhchal', at: 0.51, side: 1 },
+      { kind: 'aftabeh', at: 0.6, side: -1 },
+      { kind: 'sarv', at: 0.69, side: 1 },
+      { kind: 'shelang', at: 0.78, side: -1 },
+      { kind: 'shelang', at: 0.87, side: 1 },
     ],
     items: [
       { kind: 'can', at: 0.06, offset: 0.5 },
@@ -504,11 +566,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.3, 0.57, 0.78],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: 1 },
-      { kind: 'samovar', at: 0.3, side: -1 },
-      { kind: 'dampayi', at: 0.48, side: 1 },
-      { kind: 'aftabeh', at: 0.66, side: -1 },
-      { kind: 'farsh', at: 0.84, side: 1 },
+      { kind: 'hawz', at: 0.06, side: 1 },
+      { kind: 'yakhchal', at: 0.15, side: -1 },
+      { kind: 'yakhchal', at: 0.24, side: 1 },
+      { kind: 'sarv', at: 0.33, side: -1 },
+      { kind: 'sarv', at: 0.42, side: 1 },
+      { kind: 'aftabeh', at: 0.51, side: -1 },
+      { kind: 'hawz', at: 0.6, side: 1 },
+      { kind: 'hawz', at: 0.69, side: -1 },
+      { kind: 'shelang', at: 0.78, side: 1 },
+      { kind: 'shelang', at: 0.87, side: -1 },
     ],
     items: [
       { kind: 'can', at: 0.07, offset: -0.5 },
@@ -555,11 +622,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.27, 0.51, 0.76],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: -1 },
-      { kind: 'dampayi', at: 0.3, side: 1 },
-      { kind: 'aftabeh', at: 0.48, side: -1 },
-      { kind: 'farsh', at: 0.66, side: 1 },
-      { kind: 'samovar', at: 0.84, side: -1 },
+      { kind: 'sarv', at: 0.06, side: -1 },
+      { kind: 'hawz', at: 0.15, side: 1 },
+      { kind: 'yakhchal', at: 0.24, side: -1 },
+      { kind: 'aftabeh', at: 0.33, side: 1 },
+      { kind: 'hawz', at: 0.42, side: -1 },
+      { kind: 'yakhchal', at: 0.51, side: 1 },
+      { kind: 'sarv', at: 0.6, side: -1 },
+      { kind: 'sarv', at: 0.69, side: 1 },
+      { kind: 'shelang', at: 0.78, side: -1 },
+      { kind: 'shelang', at: 0.87, side: 1 },
     ],
     items: [
       { kind: 'can', at: 0.06, offset: 0.5 },
@@ -617,11 +689,16 @@ export const LEVELS: readonly LevelDef[] = [
     ],
     checkpoints: [0.21, 0.41, 0.61, 0.82],
     scenery: [
-      { kind: 'shelang', at: 0.12, side: 1 },
-      { kind: 'aftabeh', at: 0.3, side: -1 },
-      { kind: 'farsh', at: 0.48, side: 1 },
-      { kind: 'samovar', at: 0.66, side: -1 },
-      { kind: 'dampayi', at: 0.84, side: 1 },
+      { kind: 'yakhchal', at: 0.06, side: 1 },
+      { kind: 'sarv', at: 0.15, side: -1 },
+      { kind: 'hawz', at: 0.24, side: 1 },
+      { kind: 'yakhchal', at: 0.33, side: -1 },
+      { kind: 'sarv', at: 0.42, side: 1 },
+      { kind: 'sarv', at: 0.51, side: -1 },
+      { kind: 'aftabeh', at: 0.6, side: 1 },
+      { kind: 'hawz', at: 0.69, side: -1 },
+      { kind: 'shelang', at: 0.78, side: 1 },
+      { kind: 'shelang', at: 0.87, side: -1 },
     ],
     items: [
       { kind: 'flame', at: 0.03, offset: 0.2 },

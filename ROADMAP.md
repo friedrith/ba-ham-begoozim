@@ -6,9 +6,9 @@ Listed in the order we plan to build them.
 
 Put the game online under the `interaction-dynamics` Vercel account.
 
-- [ ] Create the project under `interaction-dynamics` and link it to this repo
+- [x] Create the project under `interaction-dynamics` and link it to this repo
 - [ ] Deploy `master` to production and each PR to a preview URL
-- [ ] Add the live URL to the README
+- [x] Add the live URL to the README
 
 **Done when** merging to `master` updates the live game without manual steps.
 
@@ -95,7 +95,8 @@ Offer the whole game in Persian alongside English.
 - [ ] Support right-to-left layout in the menu, HUD and panels, and add a Persian
       font that suits the game's style
 - [ ] Show numbers such as times and pars in Persian digits
-- [ ] Make keyboard controls work on a Persian keyboard layout
+- [ ] Keep the on-screen key labels matching the keys players must press on a
+      Persian keyboard (input already uses physical key positions)
 
 **Done when** a Persian speaker can play from the menu to the last level without
 seeing English or broken layout.

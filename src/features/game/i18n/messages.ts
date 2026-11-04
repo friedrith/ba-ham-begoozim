@@ -65,6 +65,38 @@ export type Messages = {
     again: string
     menu: string
   }
+  online: {
+    title: string
+    intro: string
+    create: string
+    join: string
+    codeLabel: string
+    connecting: string
+    notFound: string
+    unreachable: string
+    update: string
+    full: string
+    replaced: string
+    backToMenu: string
+    room: (code: string) => string
+    copyLink: string
+    copied: string
+    seatsTitle: string
+    seatsHint: string
+    you: string
+    player: (number: string) => string
+    empty: string
+    bot: string
+    away: string
+    botFill: string
+    level: string
+    start: string
+    leave: string
+    backToRoom: string
+    raceGoesOn: string
+    reconnecting: string
+    seatLost: (seat: string) => string
+  }
   /** Words that pop up on the canvas. */
   fx: {
     toots: readonly string[]

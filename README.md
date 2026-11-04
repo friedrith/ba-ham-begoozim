@@ -28,6 +28,17 @@ hold your corner to blast. `Esc` pauses, `R` restarts.
 Blast within a blink of another bean for a **harmony**: a bigger shove, a little
 gas back, and a chord.
 
+## Playing online
+
+Choose **Make a room** in the menu and send your friends the link, or the six-digit
+code. Everyone picks the beans they want, and one person can work several. Bots can
+fill the seats nobody took. If someone's connection drops, their seat waits 15 seconds
+for them, then a bot or a teammate can have it, and reloading the page gets it back
+if nobody has.
+
+Online play needs a small backend, and stays hidden until one is set up. See
+[workers/rooms](workers/rooms/README.md) for running it locally and deploying it.
+
 ## Languages
 
 The game follows the browser's language, and the menu has a switcher that remembers
@@ -40,6 +51,9 @@ in the same physical place: the labels `ض`, `ح`, `ظ` and `پ` are the same ke
 - `src/features/game/engine` — deterministic, DOM-free simulation and levels.
 - `src/features/game/render` — Canvas 2D scene, particles and the WebAudio synth.
 - `src/features/game/components` — menu, HUD and the game loop.
+- `src/features/online` — online play: the room's authoritative game, the messages
+  between it and each player, and each player's connection and prediction.
+- `workers/rooms` — the Cloudflare Durable Object that hosts a room.
 - `src/features/game/i18n` — English and Persian text, language choice and number
   formatting. A new level needs an entry under its id in both `en.ts` and `fa.ts`,
   and the tests fail until it has one.

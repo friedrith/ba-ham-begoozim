@@ -2,8 +2,16 @@
 
 import { clsx } from 'clsx'
 import { Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 
+import { laggySocket, OnlineSession, type SessionState } from '../../online/session'
 import { setInputMode, track } from '../analytics'
 import { autopilot } from '../engine/autopilot'
 import { LEVELS } from '../engine/levels'
@@ -27,7 +35,10 @@ import {
 } from '../render/scene'
 import { Sound } from '../render/sound'
 import { BeanFace } from './bean-face'
+import { Lobby, seatLabel, sessionErrorText } from './lobby'
 import { Menu, Stars } from './menu'
+import { normalizeCode, OnlineEntry } from './online-entry'
+import { Panel, PanelButton } from './panel'
 
 const KEY_SEATS: Record<string, number[]> = {
   KeyQ: [0],
@@ -74,7 +85,51 @@ type Result = {
   wipeouts: number
 }
 
-type Screen = { name: 'menu' } | { name: 'play'; levelIndex: number }
+type Screen =
+  | { name: 'menu' }
+  | { name: 'play'; levelIndex: number }
+  | { name: 'online' }
+
+/** Online play stays hidden until a room service has been deployed and named here. */
+const ROOMS_URL = process.env.NEXT_PUBLIC_ROOMS_URL
+const TOKEN_KEY = 'ba-ham-begoozim-room-token'
+const ROOM_CODE = /^\d{6}$/
+
+const noSubscribe = () => () => {}
+const noState = () => null as SessionState | null
+
+/**
+ * Who this tab is to a room. Kept for the tab, so a reload gets the same seats back while
+ * a second tab counts as someone else.
+ */
+function roomToken() {
+  try {
+    const saved = sessionStorage.getItem(TOKEN_KEY)
+    if (saved) return saved
+    const token = crypto.randomUUID()
+    sessionStorage.setItem(TOKEN_KEY, token)
+    return token
+  } catch {
+    return crypto.randomUUID()
+  }
+}
+
+function setRoomInUrl(code: string | null) {
+  const url = new URL(window.location.href)
+  if (code) url.searchParams.set('room', code)
+  else url.searchParams.delete('room')
+  window.history.replaceState(null, '', url)
+}
+
+/** `?lag=100&jitter=20` fakes a slow network while developing. */
+function devSocket() {
+  if (process.env.NODE_ENV === 'production') return undefined
+  const params = new URLSearchParams(window.location.search)
+  const lag = Number(params.get('lag') ?? 0)
+  const jitter = Number(params.get('jitter') ?? 0)
+  if (!lag && !jitter) return undefined
+  return (url: string) => laggySocket(url, lag, jitter)
+}
 
 /**
  * Asks whether a finger is the main pointer rather than reading the user agent,
@@ -113,6 +168,11 @@ export function Game() {
   const barRefs = useRef<(HTMLSpanElement | null)[]>([])
   const screenRef = useRef<Screen>({ name: 'menu' })
   const pausedRef = useRef(false)
+  const sessionRef = useRef<OnlineSession | null>(null)
+  /** The world on screen, which online is the session's rather than `worldRef`'s. */
+  const shownRef = useRef<World>(demoWorld)
+  /** Online nothing can pause the race, so "paused" is only a menu over it. */
+  const overlayRef = useRef(false)
 
   const { t, setLocale } = useLocale()
   const tRef = useRef(t)
@@ -124,6 +184,17 @@ export function Game() {
   const [result, setResult] = useState<Result | null>(null)
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [touchMode, setTouchMode] = useState(startsInTouchMode)
+  const [session, setSession] = useState<OnlineSession | null>(null)
+  const [debug] = useState(() =>
+    new URLSearchParams(window.location.search).has('debug'),
+  )
+  const online = useSyncExternalStore(
+    session?.subscribe ?? noSubscribe,
+    session?.getState ?? noState,
+    noState,
+  )
+  const room = online?.room ?? null
+  const inOnlineRace = screen.name === 'online' && room?.phase === 'race'
 
   useEffect(() => {
     soundRef.current = new Sound()
@@ -147,6 +218,7 @@ export function Game() {
       for (const seat of KEY_SEATS[code] ?? []) held[seat] = true
     }
     heldRef.current = held
+    sessionRef.current?.setHeld(held)
   }, [])
 
   const releaseAll = useCallback(() => {
@@ -184,19 +256,90 @@ export function Game() {
     setResult(null)
     setPaused(false)
     pausedRef.current = false
+    overlayRef.current = false
     const next: Screen = { name: 'menu' }
     screenRef.current = next
     setScreen(next)
   }, [releaseAll])
 
+  const enterRoom = useCallback((code: string) => {
+    if (!ROOMS_URL) return
+    soundRef.current?.unlock()
+    sessionRef.current?.close()
+    const next = new OnlineSession({
+      url: ROOMS_URL,
+      code,
+      token: roomToken(),
+      createSocket: devSocket(),
+    })
+    sessionRef.current = next
+    setSession(next)
+    setRoomInUrl(code)
+    const screenNext: Screen = { name: 'online' }
+    screenRef.current = screenNext
+    setScreen(screenNext)
+  }, [])
+
+  const leaveRoom = useCallback(() => {
+    sessionRef.current?.leave()
+    sessionRef.current = null
+    setSession(null)
+    setRoomInUrl(null)
+    goToMenu()
+  }, [goToMenu])
+
+  /** Whether seat keys do anything right now. */
+  const racing = useCallback(() => {
+    if (screenRef.current.name === 'play') return true
+    return sessionRef.current?.getState().room?.phase === 'race'
+  }, [])
+
+  /** Plays a level: for this device alone, or for everyone in the room. */
+  const playLevel = useCallback(
+    (levelIndex: number) => {
+      if (sessionRef.current) sessionRef.current.start(LEVELS[levelIndex].id)
+      else startLevel(levelIndex)
+    },
+    [startLevel],
+  )
+
   const togglePause = useCallback(() => {
-    if (screenRef.current.name !== 'play') return
-    if (worldRef.current.status === 'finished') return
-    const next = !pausedRef.current
-    pausedRef.current = next
-    setPaused(next)
+    if (!racing()) return
+    if (shownRef.current.status === 'finished') return
+    if (sessionRef.current) {
+      overlayRef.current = !overlayRef.current
+      setPaused(overlayRef.current)
+    } else {
+      const next = !pausedRef.current
+      pausedRef.current = next
+      setPaused(next)
+    }
     releaseAll()
-  }, [releaseAll])
+  }, [racing, releaseAll])
+
+  // A link with a room in it goes straight there, and so does reloading while in one.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = normalizeCode(params.get('room') ?? '')
+    // Not done here and now, so that React's double-run effects can't connect twice.
+    const timer = setTimeout(() => {
+      if (ROOMS_URL && ROOM_CODE.test(code)) enterRoom(code)
+    })
+    return () => {
+      clearTimeout(timer)
+      sessionRef.current?.close()
+      sessionRef.current = null
+    }
+  }, [enterRoom])
+
+  // Each race starts clean, whoever started it.
+  const raceKey = room ? `${room.phase}-${room.raceId}` : null
+  const [seenRaceKey, setSeenRaceKey] = useState(raceKey)
+  if (raceKey !== seenRaceKey) {
+    setSeenRaceKey(raceKey)
+    setPaused(false)
+    setResult(null)
+  }
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -212,12 +355,12 @@ export function Game() {
         togglePause()
         return
       }
-      if (screenRef.current.name !== 'play') return
-      if (event.code === 'KeyR') {
+      if (!racing()) return
+      if (screenRef.current.name === 'play' && event.code === 'KeyR') {
         startLevel(screenRef.current.levelIndex)
         return
       }
-      if (KEY_SEATS[event.code]) {
+      if (KEY_SEATS[event.code] && !overlayRef.current) {
         event.preventDefault()
         pressedKeys.current.add(event.code)
         syncHeld()
@@ -262,7 +405,7 @@ export function Game() {
       document.removeEventListener('gesturestart', refuseGesture)
       document.removeEventListener('visibilitychange', onHidden)
     }
-  }, [releaseAll, startLevel, syncHeld, togglePause])
+  }, [racing, releaseAll, startLevel, syncHeld, togglePause])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -286,22 +429,33 @@ export function Game() {
     window.addEventListener('resize', resize)
 
     const handleFinish = (world: World) => {
-      const current = screenRef.current
-      if (current.name !== 'play') return
+      if (screenRef.current.name === 'menu') return
+      overlayRef.current = false
+      setPaused(false)
       const stars = starsFor(world)
-      setProgress(recordRun(world.level.id, stars, world.raceTime))
-      track('level_finished', {
-        level_id: world.level.id,
-        time: world.raceTime,
-        par: world.level.par,
-        stars,
-        cans: world.cansTaken,
-        total_cans: world.cans.length,
-        harmonies: world.harmonies,
-        wipeouts: world.wipeouts,
-      })
+      // Watching the bots finish an online race doesn't earn anything.
+      const onlineRoom = sessionRef.current?.getState().room
+      if (
+        !onlineRoom ||
+        onlineRoom.seats.some(({ owner }) => owner === onlineRoom.you)
+      ) {
+        setProgress(recordRun(world.level.id, stars, world.raceTime))
+      }
+      // Online races have no `level_started` yet, so counting these would skew the funnel.
+      if (screenRef.current.name === 'play') {
+        track('level_finished', {
+          level_id: world.level.id,
+          time: world.raceTime,
+          par: world.level.par,
+          stars,
+          cans: world.cansTaken,
+          total_cans: world.cans.length,
+          harmonies: world.harmonies,
+          wipeouts: world.wipeouts,
+        })
+      }
       setResult({
-        levelIndex: current.levelIndex,
+        levelIndex: LEVELS.indexOf(world.level),
         time: world.raceTime,
         stars,
         cans: world.cansTaken,
@@ -316,27 +470,38 @@ export function Game() {
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
 
-      let world = worldRef.current
-      const demo = screenRef.current.name === 'menu'
+      const live = sessionRef.current
+      const raced = live?.display(dt) ?? null
+      let world = raced ?? worldRef.current
+      shownRef.current = world
+      // The lobby and the menu both have the bot driving behind them.
+      const demo = !raced && screenRef.current.name !== 'play'
       if (world !== cameraWorld) {
         cameraWorld = world
         camera.x = world.x
         camera.y = world.y
+        fxRef.current = createEffects()
+        // Online a new world can arrive at any moment, with no click here to prompt it.
+        overlayRef.current = false
+        soundRef.current?.stopAll()
       }
 
-      if (!pausedRef.current) {
-        accumulator += dt
-        while (accumulator >= STEP) {
-          stepWorld(world, demo ? autopilot(world) : heldRef.current)
-          accumulator -= STEP
+      if (raced || !pausedRef.current) {
+        if (!raced) {
+          accumulator += dt
+          while (accumulator >= STEP) {
+            stepWorld(world, demo ? autopilot(world) : heldRef.current)
+            accumulator -= STEP
+          }
         }
 
-        for (const event of world.events) {
+        const events = live && raced ? live.takeEvents() : world.events
+        for (const event of events) {
           applyEvent(fxRef.current, world, event, tRef.current.fx)
           if (!demo) soundRef.current?.handle(event)
           if (event.type === 'finish') handleFinish(world)
         }
-        world.events.length = 0
+        if (!raced) world.events.length = 0
         updateEffects(fxRef.current, world, dt)
         updateCamera(camera, world, canvas.clientWidth, canvas.clientHeight, dt)
 
@@ -402,7 +567,13 @@ export function Game() {
     syncHeld()
   }
 
-  const level = screen.name === 'play' ? LEVELS[screen.levelIndex] : null
+  const level =
+    screen.name === 'play'
+      ? LEVELS[screen.levelIndex]
+      : inOnlineRace
+        ? (LEVELS.find(({ id }) => id === room?.level) ?? LEVELS[0])
+        : null
+  const levelIndex = level ? LEVELS.indexOf(level) : 0
   const hudButton = clsx(
     'bg-cream border-ink cursor-pointer rounded-full border-[3px]',
     touchMode ? 'p-3' : 'p-2',
@@ -419,85 +590,119 @@ export function Game() {
           touchMode={touchMode}
           onPlay={startLevel}
           onLocaleChange={setLocale}
+          online={
+            ROOMS_URL && <OnlineEntry t={t} url={ROOMS_URL} onEnter={enterRoom} />
+          }
         />
       )}
 
-      {level && screen.name === 'play' && (
+      {screen.name === 'online' && session && !inOnlineRace && !online?.error && (
+        <Lobby t={t} room={room} session={session} onLeave={leaveRoom} />
+      )}
+
+      {screen.name === 'online' && online?.error && (
+        <Panel title={t.online.title}>
+          <p role="alert" className="text-center font-bold">
+            {sessionErrorText(t, online.error)}
+          </p>
+          <PanelButton primary onClick={leaveRoom}>
+            {t.online.backToMenu}
+          </PanelButton>
+        </Panel>
+      )}
+
+      {level && (
         <>
-          {t.seats.map((seat, i) => (
-            <button
-              key={i}
-              dir="ltr"
-              ref={(element) => {
-                padRefs.current[i] = element
-              }}
-              type="button"
-              aria-label={
-                touchMode ? t.hud.seatPadTouch(seat) : t.hud.seatPad(seat)
-              }
-              tabIndex={-1}
-              onPointerDown={(event) => {
-                event.currentTarget.setPointerCapture(event.pointerId)
-                setPad(i, event.pointerId, true)
-              }}
-              onPointerUp={(event) => setPad(i, event.pointerId, false)}
-              onPointerCancel={(event) => setPad(i, event.pointerId, false)}
-              onContextMenu={(event) => event.preventDefault()}
-              className={clsx(
-                'absolute flex cursor-pointer',
-                touchMode
-                  ? [
-                      'data-blasting:bg-mustard/20 group tablet:size-64 size-1/2',
-                      TOUCH_PADS[i],
-                    ]
-                  : [
-                      'bg-cream/90 border-ink w-24 flex-col items-center gap-1 rounded-2xl border-[3px] p-2 active:brightness-90 md:w-28',
-                      PAD_POSITIONS[i],
-                    ],
-              )}
-            >
-              <span
-                dir={t.dir}
-                className={
-                  touchMode
-                    ? clsx(
-                        'bg-cream/90 border-ink group-data-blasting:bg-mustard flex w-32 flex-col gap-2 p-3 md:w-44 md:p-4',
-                        TOUCH_BADGES[i],
-                      )
-                    : 'contents'
-                }
-              >
-                <span className="flex items-center gap-1">
-                  <BeanFace
-                    seat={i}
-                    className={touchMode ? 'size-12 shrink-0 md:size-16' : 'size-9'}
-                  />
-                  {touchMode ? (
-                    <span className="text-start text-sm leading-tight font-bold md:text-base">
-                      {seat.name}
-                    </span>
-                  ) : (
-                    <kbd className="bg-ink text-cream rounded-md px-2 py-0.5 text-sm font-bold">
-                      {seat.key}
-                    </kbd>
-                  )}
-                </span>
-                <span
-                  className={clsx(
-                    'bg-ink/20 w-full overflow-hidden rounded-full',
-                    touchMode ? 'h-3' : 'h-2',
-                  )}
-                >
-                  <span
-                    ref={(element) => {
-                      barRefs.current[i] = element
-                    }}
-                    className="bg-gas block h-full w-full origin-left rtl:origin-right"
-                  />
-                </span>
+          {t.seats.map((seat, i) => {
+            const roomSeat = inOnlineRace ? room?.seats[i] : undefined
+            const someoneElse =
+              roomSeat &&
+              roomSeat.owner !== room?.you &&
+              (roomSeat.status === 'here' || roomSeat.status === 'away')
+            const owner = roomSeat && room && (
+              <span className="text-xs leading-none font-bold">
+                {seatLabel(t, roomSeat, room.you)}
               </span>
-            </button>
-          ))}
+            )
+            return (
+              <button
+                key={i}
+                dir="ltr"
+                ref={(element) => {
+                  padRefs.current[i] = element
+                }}
+                type="button"
+                aria-label={
+                  touchMode ? t.hud.seatPadTouch(seat) : t.hud.seatPad(seat)
+                }
+                tabIndex={-1}
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture(event.pointerId)
+                  setPad(i, event.pointerId, true)
+                }}
+                onPointerUp={(event) => setPad(i, event.pointerId, false)}
+                onPointerCancel={(event) => setPad(i, event.pointerId, false)}
+                onContextMenu={(event) => event.preventDefault()}
+                className={clsx(
+                  'absolute flex cursor-pointer',
+                  someoneElse && 'opacity-60',
+                  touchMode
+                    ? [
+                        'data-blasting:bg-mustard/20 group tablet:size-64 size-1/2',
+                        TOUCH_PADS[i],
+                      ]
+                    : [
+                        'bg-cream/90 border-ink w-24 flex-col items-center gap-1 rounded-2xl border-[3px] p-2 active:brightness-90 md:w-28',
+                        PAD_POSITIONS[i],
+                      ],
+                )}
+              >
+                <span
+                  dir={t.dir}
+                  className={
+                    touchMode
+                      ? clsx(
+                          'bg-cream/90 border-ink group-data-blasting:bg-mustard flex w-32 flex-col gap-2 p-3 md:w-44 md:p-4',
+                          TOUCH_BADGES[i],
+                        )
+                      : 'contents'
+                  }
+                >
+                  <span className="flex items-center gap-1">
+                    <BeanFace
+                      seat={i}
+                      className={
+                        touchMode ? 'size-12 shrink-0 md:size-16' : 'size-9'
+                      }
+                    />
+                    {touchMode ? (
+                      <span className="text-start text-sm leading-tight font-bold md:text-base">
+                        {seat.name}
+                      </span>
+                    ) : (
+                      <kbd className="bg-ink text-cream rounded-md px-2 py-0.5 text-sm font-bold">
+                        {seat.key}
+                      </kbd>
+                    )}
+                  </span>
+                  {owner}
+                  <span
+                    className={clsx(
+                      'bg-ink/20 w-full overflow-hidden rounded-full',
+                      touchMode ? 'h-3' : 'h-2',
+                    )}
+                  >
+                    <span
+                      ref={(element) => {
+                        barRefs.current[i] = element
+                      }}
+                      className="bg-gas block h-full w-full origin-left rtl:origin-right"
+                    />
+                  </span>
+                </span>
+              </button>
+            )
+          })}
 
           <div
             className={clsx(
@@ -538,14 +743,17 @@ export function Game() {
                   <Volume2 className="size-5" />
                 )}
               </button>
-              <button
-                type="button"
-                aria-label={t.hud.restartLevel}
-                onClick={() => startLevel(screen.levelIndex)}
-                className={hudButton}
-              >
-                <RotateCcw className="size-5" />
-              </button>
+              {/* Online this would restart everyone's race, so it's kept behind pause. */}
+              {!inOnlineRace && (
+                <button
+                  type="button"
+                  aria-label={t.hud.restartLevel}
+                  onClick={() => startLevel(levelIndex)}
+                  className={hudButton}
+                >
+                  <RotateCcw className="size-5" />
+                </button>
+              )}
               <button
                 type="button"
                 aria-label={t.hud.pause}
@@ -568,15 +776,42 @@ export function Game() {
             {t.levels[level.id].hint}
           </p>
 
+          {inOnlineRace && online && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-20 flex flex-col items-center gap-2 px-4">
+              {online.status === 'reconnecting' && (
+                <output className="bg-sauce border-ink text-cream rounded-xl border-2 px-3 py-1 text-sm font-bold">
+                  {t.online.reconnecting}
+                </output>
+              )}
+              {online.lostSeat !== null && (
+                <output className="bg-cream border-ink rounded-xl border-2 px-3 py-1 text-center text-sm font-bold">
+                  {t.online.seatLost(t.seats[online.lostSeat].name)}
+                </output>
+              )}
+            </div>
+          )}
+
           {paused && (
             <Panel title={t.paused.title}>
+              {inOnlineRace && (
+                <p className="text-center font-bold">{t.online.raceGoesOn}</p>
+              )}
               <PanelButton primary onClick={togglePause}>
                 {t.paused.resume}
               </PanelButton>
-              <PanelButton onClick={() => startLevel(screen.levelIndex)}>
+              <PanelButton onClick={() => playLevel(levelIndex)}>
                 {t.paused.restart}
               </PanelButton>
-              <PanelButton onClick={goToMenu}>{t.paused.menu}</PanelButton>
+              {inOnlineRace ? (
+                <>
+                  <PanelButton onClick={() => session?.toLobby()}>
+                    {t.online.backToRoom}
+                  </PanelButton>
+                  <PanelButton onClick={leaveRoom}>{t.online.leave}</PanelButton>
+                </>
+              ) : (
+                <PanelButton onClick={goToMenu}>{t.paused.menu}</PanelButton>
+              )}
             </Panel>
           )}
 
@@ -610,57 +845,37 @@ export function Game() {
               {result.levelIndex + 1 < LEVELS.length && (
                 <PanelButton
                   primary
-                  onClick={() => startLevel(result.levelIndex + 1)}
+                  onClick={() => playLevel(result.levelIndex + 1)}
                 >
                   {t.result.nextLevel}
                 </PanelButton>
               )}
-              <PanelButton onClick={() => startLevel(result.levelIndex)}>
+              <PanelButton onClick={() => playLevel(result.levelIndex)}>
                 {t.result.again}
               </PanelButton>
-              <PanelButton onClick={goToMenu}>{t.result.menu}</PanelButton>
+              {inOnlineRace ? (
+                <>
+                  <PanelButton onClick={() => session?.toLobby()}>
+                    {t.online.backToRoom}
+                  </PanelButton>
+                  <PanelButton onClick={leaveRoom}>{t.online.leave}</PanelButton>
+                </>
+              ) : (
+                <PanelButton onClick={goToMenu}>{t.result.menu}</PanelButton>
+              )}
             </Panel>
           )}
         </>
       )}
-    </main>
-  )
-}
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-ink/50 absolute inset-0 flex items-center justify-center p-4">
-      <dialog
-        open
-        aria-label={title}
-        className="text-ink bg-cream border-ink shadow-ink static flex w-full max-w-sm flex-col gap-3 rounded-3xl border-4 p-6 shadow-[0_8px_0]"
-      >
-        <h2 className="font-display text-sauce text-center text-4xl">{title}</h2>
-        {children}
-      </dialog>
-    </div>
-  )
-}
-
-function PanelButton({
-  primary,
-  onClick,
-  children,
-}: {
-  primary?: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={clsx(
-        'border-ink font-display cursor-pointer rounded-xl border-[3px] px-4 py-2 text-lg',
-        primary ? 'bg-mustard' : 'bg-white',
+      {debug && online && (
+        <p
+          dir="ltr"
+          className="bg-ink text-cream pointer-events-none absolute start-1/2 bottom-1 -translate-x-1/2 rounded px-2 text-xs tabular-nums"
+        >
+          {`${online.status} · rtt ${Math.round(online.rtt)}ms · room tick gap ${online.tickGap}ms`}
+        </p>
       )}
-    >
-      {children}
-    </button>
+    </main>
   )
 }

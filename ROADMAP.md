@@ -63,13 +63,16 @@ with keyboard keys. The goal is a version that feels made for a shared tablet.
 Let players on different devices share one tub, with each player taking one or
 more seats.
 
-- [ ] **Spike first:** choose the transport and test how latency feels in play
-- [ ] Rooms: create one, join with a short code or link, choose seats
-- [ ] Sync the game between players
-- [ ] Handle latency, disconnects and rejoining, and fill empty seats with the
+- [x] **Spike first:** choose the transport and test how latency feels in play
+- [x] Rooms: create one, join with a short code or link, choose seats
+- [x] Sync the game between players
+- [x] Handle latency, disconnects and rejoining, and fill empty seats with the
       local player or the bot
 - [ ] Retune or scale the harmony window, which depends on near-simultaneous
-      blasts and will be the first thing latency breaks
+      blasts and will be the first thing latency breaks. Harmony now compares
+      press times, which holds up in simulation. It needs a real playtest.
+- [x] Deploy the [room service](workers/rooms/README.md) and measure it on real
+      Cloudflare
 
 Design notes:
 

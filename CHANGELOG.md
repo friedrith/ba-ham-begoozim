@@ -6,6 +6,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- In-game feedback popup that emails bug reports, ideas and feedback ([#23](https://github.com/friedrith/ba-ham-begoozim/pull/23)).
+
+### Fixed
+
+- Arrow keys in the room code field no longer move the level carousel ([#23](https://github.com/friedrith/ba-ham-begoozim/pull/23)).
+
 ### Changed
 
 - README and metadata base use the new domain, gooz.zendegi.io, and the README shows the game on a phone ([#20](https://github.com/friedrith/ba-ham-begoozim/pull/20)).

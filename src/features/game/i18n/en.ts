@@ -80,6 +80,25 @@ export const en: Messages = {
     king: 'Gooz King',
   },
   trophy: 'Golden Dudul',
+  stickers: {
+    open: 'Stickers',
+    title: 'Stick it on',
+    hint: 'Up to three on each bean. Online, teammates see the ones on your beans.',
+    peel: 'Peel them off',
+    done: 'Done',
+    names: {
+      star: 'Star',
+      heart: 'Heart',
+      bolt: 'Lightning bolt',
+      flower: 'Flower',
+      moon: 'Moon',
+      duck: 'Rubber duck',
+      cloud: 'Gas cloud',
+      can: 'Can of beans',
+      drop: 'Water drop',
+      pizza: 'Slice of pizza',
+    },
+  },
   awards: {
     suspect: {
       title: 'Prime Suspect',

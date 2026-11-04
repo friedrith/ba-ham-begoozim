@@ -1,4 +1,5 @@
 import type { RankId } from '../progress'
+import type { StickerId } from '../stickers'
 import type { AwardId } from '../tally'
 
 export type Locale = 'en' | 'fa'
@@ -94,6 +95,16 @@ export type Messages = {
   /** A secret, earned by finishing every level. Only its owner ever sees the name. */
   trophy: string
   /** One goes to each bean at the end of a race. `detail` gets the winning score. */
+  stickers: {
+    /** On the buttons that open the sticker panel. */
+    open: string
+    title: string
+    hint: string
+    peel: string
+    done: string
+    /** Spoken names and tooltips of the stickers. */
+    names: Record<StickerId, string>
+  }
   awards: Record<AwardId, { title: string; detail: (value: string) => string }>
   online: {
     title: string

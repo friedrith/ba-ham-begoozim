@@ -1,8 +1,9 @@
 import type { Messages } from '../i18n'
 import { formatNumber, formatTime } from '../i18n'
 import { MAX_STARS, type RankId } from '../progress'
+import type { BeanStickers, StickerId } from '../stickers'
 import type { Award } from '../tally'
-import { BEAN_COLORS, BEAN_ICON_PATH } from './scene'
+import { BEAN_COLORS, BEAN_ICON_PATH, drawStickers } from './scene'
 
 const SIZE = 1080
 const MARGIN = 60
@@ -20,6 +21,7 @@ export type ShareCardRun = {
   harmonies: number
   wipeouts: number
   awards: Award[]
+  stickers: BeanStickers
 }
 
 type Fonts = { display: string; body: string }
@@ -46,6 +48,7 @@ function drawBean(
   x: number,
   y: number,
   scale: number,
+  stickers: StickerId[],
 ) {
   ctx.save()
   ctx.translate(x, y)
@@ -72,6 +75,7 @@ function drawBean(
   ctx.moveTo(-5, 2)
   ctx.quadraticCurveTo(0, 8, 5, 2)
   ctx.stroke()
+  drawStickers(ctx, stickers)
   ctx.restore()
 }
 
@@ -133,10 +137,10 @@ export function drawShareCard(
   ctx.fillStyle = SAUCE
   fitText(ctx, t.menuTitle, center, 104, textWidth, 52, fonts.display)
 
-  drawBean(ctx, 0, center - 300, 270, 3.6)
-  drawBean(ctx, 3, center + 300, 270, 3.6)
-  drawBean(ctx, 2, center - 165, 300, 4)
-  drawBean(ctx, 1, center + 165, 300, 4)
+  drawBean(ctx, 0, center - 300, 270, 3.6, run.stickers[0])
+  drawBean(ctx, 3, center + 300, 270, 3.6, run.stickers[3])
+  drawBean(ctx, 2, center - 165, 300, 4, run.stickers[2])
+  drawBean(ctx, 1, center + 165, 300, 4, run.stickers[1])
   if (king) drawCrown(ctx, center, 262, 5)
 
   ctx.fillStyle = INK
@@ -175,7 +179,14 @@ export function drawShareCard(
     const inward = rtl ? -1 : 1
     const room = cellWidth - textInset - 12
     const text = t.awards[award.id]
-    drawBean(ctx, seat, start + inward * beanInset, top + 70, 2.6)
+    drawBean(
+      ctx,
+      seat,
+      start + inward * beanInset,
+      top + 70,
+      2.6,
+      run.stickers[seat],
+    )
     ctx.fillStyle = INK
     fitText(
       ctx,

@@ -95,6 +95,18 @@ export async function createRoom(url: string) {
   return code
 }
 
+/** How many people are in rooms right now, or null if the service can't say. */
+export async function fetchPlayerCount(url: string) {
+  try {
+    const response = await fetch(`${url}/players`)
+    if (!response.ok) return null
+    const { players } = (await response.json()) as { players: number }
+    return players
+  } catch {
+    return null
+  }
+}
+
 /**
  * One device's connection to a room. Holds what the room last said, and from it works
  * out what to show right now: see `display`.

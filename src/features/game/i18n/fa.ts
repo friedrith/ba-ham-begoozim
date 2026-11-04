@@ -135,6 +135,7 @@ export const fa: Messages = {
   },
   online: {
     title: 'بازی آنلاین',
+    playersNow: (count) => `${count} نفر الان آنلاین دارن بازی می‌کنن`,
     intro: 'هر کی با دستگاه خودش. یه اتاق بساز و لینکش رو برای دوستات بفرست.',
     create: 'ساختن اتاق',
     or: 'یا',

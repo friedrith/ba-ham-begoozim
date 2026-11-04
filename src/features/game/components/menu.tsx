@@ -48,6 +48,8 @@ type MenuProps = {
   onStickers: () => void
   /** Shown between the levels and the instructions. */
   online?: React.ReactNode
+  /** Shown under the tagline. */
+  players?: React.ReactNode
 }
 
 export function Stars({
@@ -98,6 +100,7 @@ export function Menu({
   onFeedback,
   onStickers,
   online,
+  players,
 }: MenuProps) {
   const sliderRef = useRef<HTMLOListElement>(null)
   const [selected, setSelected] = useState(() => nextLevelIndex(progress))
@@ -214,6 +217,7 @@ export function Menu({
           <p className="bg-cream border-ink rounded-full border-2 px-4 py-1 text-sm font-bold md:text-base">
             {t.tagline}
           </p>
+          {players}
         </header>
 
         <section

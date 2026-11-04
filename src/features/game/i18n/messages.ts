@@ -108,6 +108,8 @@ export type Messages = {
   awards: Record<AwardId, { title: string; detail: (value: string) => string }>
   online: {
     title: string
+    /** How many people are in online rooms right now. */
+    playersNow: (count: string) => string
     intro: string
     create: string
     or: string

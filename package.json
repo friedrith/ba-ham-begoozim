@@ -12,7 +12,8 @@
     "lint": "oxlint",
     "check": "oxlint --fix && oxfmt .",
     "ci": "oxlint && oxfmt --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "analytics": "vercel integration open posthog posthog-gooz --scope interaction-dynamics"
   },
   "dependencies": {
     "clsx": "^2.1.1",

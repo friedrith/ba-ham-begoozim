@@ -61,3 +61,6 @@ PostHog is used for analytics only: flags, replay, surveys and the rest stay off
 
 The game runs PostHog in cookieless mode, so **turn on cookieless server hash mode
 in the PostHog project settings**. PostHog drops the events otherwise.
+
+`bun run analytics` opens the PostHog dashboard. It needs the Vercel CLI, logged in
+with access to the Interaction Dynamics team.

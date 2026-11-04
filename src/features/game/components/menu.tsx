@@ -50,12 +50,15 @@ export function Stars({
   count,
   t,
   small,
+  celebrate,
 }: {
   count: number
   t: Messages
   small?: boolean
+  /** Big, with each earned star stamped on after the card has landed. */
+  celebrate?: boolean
 }) {
-  const size = small ? 'size-3.5' : 'size-5'
+  const size = small ? 'size-3.5' : celebrate ? 'size-10' : 'size-5'
   return (
     <span className="flex gap-0.5">
       <span className="sr-only">{t.menu.stars(formatNumber(count, t.locale))}</span>
@@ -66,7 +69,9 @@ export function Stars({
           className={clsx(
             size,
             i < count ? 'fill-mustard text-ink' : 'text-ink/25 fill-transparent',
+            celebrate && i < count && 'motion-safe:animate-star-stamp',
           )}
+          style={celebrate ? { animationDelay: `${0.45 + i * 0.2}s` } : undefined}
         />
       ))}
     </span>

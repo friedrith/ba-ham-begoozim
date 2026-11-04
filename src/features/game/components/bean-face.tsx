@@ -3,12 +3,18 @@ import { BEAN_COLORS, BEAN_ICON_PATH } from '../render/scene'
 type BeanFaceProps = {
   seat: number
   className?: string
+  style?: React.CSSProperties
 }
 
 /** The in-game bean as an icon, for the menu and the seat pads. */
-export function BeanFace({ seat, className }: BeanFaceProps) {
+export function BeanFace({ seat, className, style }: BeanFaceProps) {
   return (
-    <svg viewBox="-22 -22 44 44" className={className} aria-hidden="true">
+    <svg
+      viewBox="-22 -22 44 44"
+      className={className}
+      style={style}
+      aria-hidden="true"
+    >
       <path
         d={BEAN_ICON_PATH}
         fill={BEAN_COLORS[seat]}

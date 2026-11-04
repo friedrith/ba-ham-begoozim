@@ -2,6 +2,7 @@
 //
 //   bun run changelog         preview what the next release would contain
 //   bun run changelog 0.2.0   write the release and delete the folded entries
+//   bun run changelog auto    same, working out the version from the entries
 
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -12,6 +13,7 @@ const ROOT = join(import.meta.dir, '..')
 export const FRAGMENTS_DIR = join(ROOT, 'changelog.d')
 const CHANGELOG = join(ROOT, 'CHANGELOG.md')
 const PACKAGE = join(ROOT, 'package.json')
+const UNRELEASED_HEADING = '## [Unreleased]\n'
 
 const SECTIONS = ['Added', 'Changed', 'Deprecated', 'Removed', 'Fixed', 'Security']
 
@@ -72,6 +74,30 @@ export function parseUnreleased(body: string): Entry[] {
   return entries
 }
 
+/** Where the [Unreleased] section sits in CHANGELOG.md. */
+function unreleasedRange(changelog: string): { start: number; end: number } {
+  const start = changelog.indexOf(UNRELEASED_HEADING)
+  const end = changelog.indexOf('\n## [', start + 1)
+  if (start === -1 || end === -1) {
+    throw new Error("CHANGELOG.md doesn't have the expected [Unreleased] layout")
+  }
+  return { start, end }
+}
+
+function pendingEntries(changelog: string, fragments: Entry[]): Entry[] {
+  const { start, end } = unreleasedRange(changelog)
+  const body = changelog.slice(start + UNRELEASED_HEADING.length, end)
+  return [...parseUnreleased(body), ...fragments]
+}
+
+/** Anything added bumps the minor version, everything else the patch. */
+export function nextVersion(current: string, entries: Entry[]): string {
+  const [major, minor, patch] = current.split('.').map(Number)
+  return entries.some(({ section }) => section === 'Added')
+    ? `${major}.${minor + 1}.0`
+    : `${major}.${minor}.${patch + 1}`
+}
+
 export function buildRelease(
   changelog: string,
   fragments: Entry[],
@@ -79,22 +105,17 @@ export function buildRelease(
   date: string,
   sha: string,
 ): string {
-  const start = changelog.indexOf('## [Unreleased]\n')
-  const end = changelog.indexOf('\n## [', start + 1)
+  const { start, end } = unreleasedRange(changelog)
   const unreleasedLink = /^\[Unreleased\]: .*\/compare\/(.+)\.\.\.master$/m.exec(
     changelog,
   )
-  if (start === -1 || end === -1 || !unreleasedLink) {
-    throw new Error("CHANGELOG.md doesn't have the expected [Unreleased] layout")
+  if (!unreleasedLink) {
+    throw new Error("CHANGELOG.md doesn't have the expected [Unreleased] link")
   }
-  const heading = '## [Unreleased]\n'
-  const entries = [
-    ...parseUnreleased(changelog.slice(start + heading.length, end)),
-    ...fragments,
-  ]
+  const entries = pendingEntries(changelog, fragments)
   if (entries.length === 0) throw new Error('Nothing to release')
 
-  const released = `${heading}\n## [${version}] - ${date}\n\n${renderSections(entries)}`
+  const released = `${UNRELEASED_HEADING}\n## [${version}] - ${date}\n\n${renderSections(entries)}`
   const links = [
     `[Unreleased]: ${REPO_URL}/compare/${sha}...master`,
     `[${version}]: ${REPO_URL}/compare/${unreleasedLink[1]}...${sha}`,
@@ -127,17 +148,21 @@ function readFragments(): Entry[] {
 }
 
 if (import.meta.main) {
-  const version = process.argv[2]
+  const target = process.argv[2]
   const fragments = readFragments()
-  if (!version) {
+  if (!target) {
     console.log(renderSections(fragments) || 'No entries in changelog.d/')
   } else {
-    if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`Bad version: ${version}`)
     const date = new Date().toISOString().slice(0, 10)
     const sha = git('rev-parse', '--short', 'HEAD')
     const changelog = readFileSync(CHANGELOG, 'utf8')
-    writeFileSync(CHANGELOG, buildRelease(changelog, fragments, version, date, sha))
     const pkg = readFileSync(PACKAGE, 'utf8')
+    const version =
+      target === 'auto'
+        ? nextVersion(JSON.parse(pkg).version, pendingEntries(changelog, fragments))
+        : target
+    if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`Bad version: ${version}`)
+    writeFileSync(CHANGELOG, buildRelease(changelog, fragments, version, date, sha))
     writeFileSync(
       PACKAGE,
       pkg.replace(/"version": ".*?"/, `"version": "${version}"`),

@@ -224,8 +224,8 @@ export function Game() {
   const [result, setResult] = useState<Result | null>(null)
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [touchMode, setTouchMode] = useState(startsInTouchMode)
-  /** Touch only: the pads fill a phone's screen, so the shout buttons wait to be asked. */
-  const [shoutsOpen, setShoutsOpen] = useState(false)
+  /** The shout buttons show until a player hides them to clear the screen. */
+  const [shoutsOpen, setShoutsOpen] = useState(true)
   const [session, setSession] = useState<OnlineSession | null>(null)
   const [debug] = useState(() =>
     new URLSearchParams(window.location.search).has('debug'),
@@ -855,7 +855,7 @@ export function Game() {
               </span>
             </div>
             <div className="pointer-events-auto flex gap-2">
-              {inOnlineRace && touchMode && (
+              {inOnlineRace && (
                 <button
                   type="button"
                   aria-label={t.hud.shout}
@@ -930,7 +930,7 @@ export function Game() {
                   {t.online.seatLost(t.seats[online.lostSeat].name)}
                 </output>
               )}
-              {(!touchMode || shoutsOpen) && !paused && !result && (
+              {shoutsOpen && !paused && !result && (
                 <ShoutButtons t={t} session={session} />
               )}
             </div>

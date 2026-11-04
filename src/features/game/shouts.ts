@@ -4,6 +4,7 @@
  */
 export const SHOUT_IDS = [
   'more',
+  'youMore',
   'stop',
   'together',
   'left',

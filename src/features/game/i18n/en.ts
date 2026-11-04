@@ -55,6 +55,7 @@ export const en: Messages = {
   },
   shouts: {
     more: 'Fart more!',
+    youMore: 'You fart more!',
     stop: 'Stop!',
     together: 'Together!',
     left: 'Left!',

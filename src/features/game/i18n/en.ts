@@ -20,6 +20,9 @@ export const en: Messages = {
     par: (time) => `Par ${time}`,
     best: (time) => `Best ${time}`,
     play: 'Play',
+    previousLevel: 'Previous level',
+    nextLevel: 'Next level',
+    levelCount: (count) => `Level ${count}`,
     totalStars: (count) => `${count} stars`,
   },
   hud: {

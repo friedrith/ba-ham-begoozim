@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
-import { Star } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { LEVELS } from '../engine/levels'
 import {
@@ -11,9 +11,12 @@ import {
   type Messages,
 } from '../i18n'
 import type { Progress } from '../progress'
-import { PALETTES } from '../render/scene'
 import { BeanFace } from './bean-face'
+import { LevelPreview } from './level-preview'
 import { RichText } from './rich-text'
+
+const arrowButton =
+  'bg-white border-ink shrink-0 cursor-pointer rounded-full border-[3px] p-2 transition-transform hover:-translate-y-0.5 disabled:cursor-default disabled:opacity-30 disabled:hover:translate-y-0'
 
 type MenuProps = {
   t: Messages
@@ -63,15 +66,66 @@ export function Menu({
   onPlay,
   onLocaleChange,
 }: MenuProps) {
+  const sliderRef = useRef<HTMLOListElement>(null)
   const [selected, setSelected] = useState(() => nextLevelIndex(progress))
-  const level = LEVELS[selected]
-  const text = t.levels[level.id]
-  const record = progress[level.id]
+  const selectedRef = useRef(selected)
   const totalStars = LEVELS.reduce(
     (total, { id }) => total + (progress[id]?.stars ?? 0),
     0,
   )
   const other = MESSAGES[t.locale === 'fa' ? 'en' : 'fa']
+
+  /** The slider scrolls into negative numbers in right-to-left layouts. */
+  const scrollPosition = useCallback(
+    (slider: HTMLElement, index: number) =>
+      index * slider.clientWidth * (t.dir === 'rtl' ? -1 : 1),
+    [t.dir],
+  )
+
+  const goTo = useCallback(
+    (index: number) => {
+      const slider = sliderRef.current
+      if (!slider) return
+      const reducedMotion = window.matchMedia(
+        '(prefers-reduced-motion: reduce)',
+      ).matches
+      slider.scrollTo({
+        left: scrollPosition(slider, index),
+        behavior: reducedMotion ? 'auto' : 'smooth',
+      })
+    },
+    [scrollPosition],
+  )
+
+  const syncSelected = () => {
+    const slider = sliderRef.current
+    if (!slider) return
+    const index = Math.round(
+      Math.abs(slider.scrollLeft) / (slider.clientWidth || 1),
+    )
+    selectedRef.current = index
+    setSelected(index)
+  }
+
+  // Opens on the offered level, and holds it when the language flips the slider.
+  useLayoutEffect(() => {
+    const slider = sliderRef.current
+    if (slider) {
+      slider.scrollLeft = scrollPosition(slider, selectedRef.current)
+    }
+  }, [scrollPosition])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.code !== 'ArrowLeft' && event.code !== 'ArrowRight') return
+      const forwards = event.code === (t.dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight')
+      const next = selectedRef.current + (forwards ? 1 : -1)
+      if (next >= 0 && next < LEVELS.length) goTo(next)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [goTo, t.dir])
 
   return (
     <div className="bg-ink/45 absolute inset-0 touch-pan-y overflow-y-auto overscroll-contain">
@@ -98,66 +152,111 @@ export function Menu({
 
         <section
           aria-label={t.menu.levels}
-          className="bg-cream border-ink shadow-ink grid gap-4 rounded-2xl border-[3px] p-3 shadow-[0_5px_0] md:grid-cols-[1fr_17rem] md:p-4"
+          className="bg-cream border-ink shadow-ink flex flex-col gap-3 rounded-2xl border-[3px] p-3 shadow-[0_5px_0] md:p-4"
         >
-          <div className="flex flex-col gap-2 md:order-last">
-            <h2 className="font-display text-3xl leading-tight">{text.name}</h2>
-            <p className="text-ink/75 flex-1 text-sm leading-snug">{text.blurb}</p>
-            <p className="flex justify-between gap-3 text-sm font-bold tabular-nums">
-              <span>{t.menu.par(formatTime(level.par, t.locale))}</span>
-              {record && (
-                <span>{t.menu.best(formatTime(record.bestTime, t.locale))}</span>
-              )}
-            </p>
-            <Stars count={record?.stars ?? 0} t={t} />
+          <ol
+            ref={sliderRef}
+            dir={t.dir}
+            onScroll={syncSelected}
+            className="flex touch-pan-x touch-pan-y snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain [&::-webkit-scrollbar]:hidden"
+          >
+            {LEVELS.map((level, index) => {
+              const text = t.levels[level.id]
+              const record = progress[level.id]
+              return (
+                <li
+                  key={level.id}
+                  // Only the level in view can take focus or be pressed.
+                  inert={index !== selected}
+                  className="grid w-full shrink-0 snap-center snap-always content-start gap-3 p-1 pb-2 md:grid-cols-[1fr_17rem] md:gap-4"
+                >
+                  <LevelPreview level={level} />
+                  <div className="flex flex-col gap-2">
+                    <h2 className="font-display text-3xl leading-tight">
+                      {text.name}
+                    </h2>
+                    <p className="text-ink/75 flex-1 text-sm leading-snug">
+                      {text.blurb}
+                    </p>
+                    <p className="flex justify-between gap-3 text-sm font-bold tabular-nums">
+                      <span>{t.menu.par(formatTime(level.par, t.locale))}</span>
+                      {record && (
+                        <span>
+                          {t.menu.best(formatTime(record.bestTime, t.locale))}
+                        </span>
+                      )}
+                    </p>
+                    <Stars count={record?.stars ?? 0} t={t} />
+                    <button
+                      type="button"
+                      onClick={() => onPlay(index)}
+                      className="bg-mustard border-ink shadow-ink font-display cursor-pointer rounded-xl border-[3px] px-4 py-2 text-2xl shadow-[0_4px_0] transition-transform hover:-translate-y-0.5 active:translate-y-1 active:shadow-none"
+                    >
+                      {t.menu.play}
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+
+          <div className="flex items-center justify-between gap-3">
             <button
               type="button"
-              onClick={() => onPlay(selected)}
-              className="bg-mustard border-ink shadow-ink font-display cursor-pointer rounded-xl border-[3px] px-4 py-2 text-2xl shadow-[0_4px_0] transition-transform hover:-translate-y-0.5 active:translate-y-1 active:shadow-none"
+              aria-label={t.menu.previousLevel}
+              disabled={selected === 0}
+              onClick={() => goTo(selected - 1)}
+              className={arrowButton}
             >
-              {t.menu.play}
+              <ChevronLeft aria-hidden="true" className="size-6 rtl:-scale-x-100" />
             </button>
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {LEVELS.map(({ id, theme }, index) => (
-                <li key={id}>
-                  <button
-                    type="button"
-                    aria-pressed={index === selected}
-                    // A second click on the chosen course is as good as pressing Play.
-                    onClick={() =>
-                      index === selected ? onPlay(index) : setSelected(index)
-                    }
+            <div className="flex flex-col items-center gap-1.5">
+              <span aria-hidden="true" className="flex items-center gap-1">
+                {LEVELS.map(({ id }, index) => (
+                  <span
+                    key={id}
                     className={clsx(
-                      'border-ink flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-xl border-[3px] text-start transition-transform hover:-translate-y-0.5',
-                      index === selected ? 'bg-mustard/60' : 'bg-white',
+                      'border-ink size-2.5 rounded-full border-2 transition-transform',
+                      index === selected && 'bg-sauce scale-125',
+                      index !== selected && progress[id] && 'bg-mustard',
                     )}
-                  >
-                    <span
-                      className="flex items-center justify-between gap-2 px-2 py-1"
-                      style={{ backgroundColor: PALETTES[theme].water }}
-                    >
-                      <span className="bg-cream border-ink rounded-md border-2 px-1.5 text-xs font-bold tabular-nums">
-                        {formatNumber(index + 1, t.locale)}
-                      </span>
-                      <Stars count={progress[id]?.stars ?? 0} t={t} small />
-                    </span>
-                    <span className="font-display px-2 py-1.5 text-sm leading-tight md:text-base">
-                      {t.levels[id].name}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ol>
+                  />
+                ))}
+              </span>
+              <p
+                aria-live="polite"
+                className="flex items-center gap-3 text-sm font-bold tabular-nums"
+              >
+                <span>
+                  {t.menu.levelCount(
+                    formatNumber(`${selected + 1}/${LEVELS.length}`, t.locale),
+                  )}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Star
+                    aria-hidden="true"
+                    className="fill-mustard text-ink size-4"
+                  />
+                  {t.menu.totalStars(
+                    `${formatNumber(totalStars, t.locale)}/${formatNumber(LEVELS.length * 3, t.locale)}`,
+                  )}
+                </span>
+              </p>
+            </div>
 
-            <p className="flex items-center gap-1 text-sm font-bold tabular-nums">
-              <Star aria-hidden="true" className="fill-mustard text-ink size-4" />
-              {t.menu.totalStars(
-                `${formatNumber(totalStars, t.locale)}/${formatNumber(LEVELS.length * 3, t.locale)}`,
-              )}
-            </p>
+            <button
+              type="button"
+              aria-label={t.menu.nextLevel}
+              disabled={selected === LEVELS.length - 1}
+              onClick={() => goTo(selected + 1)}
+              className={arrowButton}
+            >
+              <ChevronRight
+                aria-hidden="true"
+                className="size-6 rtl:-scale-x-100"
+              />
+            </button>
           </div>
         </section>
 

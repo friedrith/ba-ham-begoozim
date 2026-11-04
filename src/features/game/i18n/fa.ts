@@ -24,6 +24,9 @@ export const fa: Messages = {
     par: (time) => `هدف ${time}`,
     best: (time) => `بهترین ${time}`,
     play: 'بزن بریم',
+    previousLevel: 'مرحلهٔ قبلی',
+    nextLevel: 'مرحلهٔ بعدی',
+    levelCount: (count) => `مرحلهٔ ${count}`,
     totalStars: (count) => `${count} ستاره`,
   },
   hud: {

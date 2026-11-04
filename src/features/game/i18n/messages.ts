@@ -29,6 +29,10 @@ export type Messages = {
     howToPlaySolo: string
     stars: (count: string) => string
     par: (time: string) => string
+    best: (time: string) => string
+    play: string
+    /** `count` is already written as stars out of the total, like 3/36. */
+    totalStars: (count: string) => string
   }
   hud: {
     time: string
@@ -61,6 +65,8 @@ export type Messages = {
     can: string
     respawn: string
     go: string
+    smash: string
+    skid: string
   }
   /** In seat order: front left, front right, rear left, rear right. */
   seats: readonly [SeatText, SeatText, SeatText, SeatText]

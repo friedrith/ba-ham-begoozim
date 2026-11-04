@@ -3,6 +3,9 @@ import {
   CAN_RADIUS,
   finishIndex,
   gateBar,
+  ICICLE_RADIUS,
+  ICICLE_WARNING,
+  icicleLanding,
   paddleBar,
   SEATS,
   URCHIN_RADIUS,
@@ -24,7 +27,7 @@ type Palette = {
   lip: string
 }
 
-const PALETTES: Record<Theme, Palette> = {
+export const PALETTES: Record<Theme, Palette> = {
   tile: {
     bank: '#f6efe2',
     bankLine: '#d9cfbb',
@@ -48,6 +51,14 @@ const PALETTES: Record<Theme, Palette> = {
     waterDeep: '#8f3f13',
     ripple: 'rgba(255,190,110,0.4)',
     lip: '#7c7780',
+  },
+  frost: {
+    bank: '#dcebf5',
+    bankLine: '#b7d3e6',
+    water: '#6fb7dd',
+    waterDeep: '#4f9ccb',
+    ripple: 'rgba(255,255,255,0.55)',
+    lip: '#f6fbff',
   },
 }
 
@@ -124,6 +135,28 @@ function drawBank(
       }
     }
     ctx.stroke()
+  } else if (theme === 'frost') {
+    // Snowflakes in a staggered drift, each with six arms.
+    const size = 130
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    const firstRow = Math.floor(bounds.y0 / size)
+    for (let row = firstRow; row * size < bounds.y1 + size; row++) {
+      const shift = row % 2 === 0 ? 0 : size / 2
+      const firstColumn = Math.floor(bounds.x0 / size) - 1
+      for (let column = firstColumn; column * size < bounds.x1 + size; column++) {
+        const x = column * size + shift
+        const y = row * size
+        for (let arm = 0; arm < 3; arm++) {
+          const a = (arm / 3) * Math.PI
+          const dx = Math.cos(a) * 20
+          const dy = Math.sin(a) * 20
+          ctx.moveTo(x - dx, y - dy)
+          ctx.lineTo(x + dx, y + dy)
+        }
+      }
+    }
+    ctx.stroke()
   } else {
     const size = 170
     ctx.beginPath()
@@ -188,6 +221,36 @@ function drawWater(
       ctx.beginPath()
       ctx.moveTo(x - len, y)
       ctx.quadraticCurveTo(x, y - 8, x + len, y)
+      ctx.stroke()
+    }
+  }
+
+  // Ice sheets sit on top of the water, scratched by everyone who slid off them.
+  for (const sheet of world.ice) {
+    const ice = new Path2D()
+    for (let i = sheet.from; i <= sheet.to; i++) {
+      if (i === sheet.from) ice.moveTo(left[i].x, left[i].y)
+      else ice.lineTo(left[i].x, left[i].y)
+    }
+    for (let i = sheet.to; i >= sheet.from; i--) ice.lineTo(right[i].x, right[i].y)
+    ice.closePath()
+    ctx.fillStyle = 'rgba(176,228,250,0.9)'
+    ctx.fill(ice)
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'
+    ctx.lineWidth = 3
+    ctx.stroke(ice)
+    for (let i = sheet.from + 1; i < sheet.to; i += 2) {
+      const s = samples[i]
+      if (s.x < bounds.x0 - 100 || s.x > bounds.x1 + 100) continue
+      if (s.y < bounds.y0 - 100 || s.y > bounds.y1 + 100) continue
+      const seed = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1
+      const across = (seed * 2 - 1) * s.hw * 0.75
+      const length = 16 + seed * 26
+      const x = s.x + s.nx * across
+      const y = s.y + s.ny * across
+      ctx.beginPath()
+      ctx.moveTo(x - s.tx * length, y - s.ty * length)
+      ctx.lineTo(x + s.tx * length + s.nx * 10, y + s.ty * length + s.ny * 10)
       ctx.stroke()
     }
   }
@@ -410,6 +473,57 @@ function drawFlame(
   ctx.quadraticCurveTo(7, -2, 0, 5)
   ctx.quadraticCurveTo(-7, -2, 0, -16 * flicker)
   ctx.fill()
+  ctx.restore()
+}
+
+/** A growing shadow on the water, then the icicle itself comes down into it. */
+function drawIcicle(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  landing: number,
+) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'
+  ctx.lineWidth = 3
+  ctx.setLineDash([6, 9])
+  ctx.beginPath()
+  ctx.arc(0, 0, ICICLE_RADIUS, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  if (landing < ICICLE_WARNING) {
+    const closing = 1 - landing / ICICLE_WARNING
+    ctx.fillStyle = `rgba(20,50,80,${0.2 + closing * 0.4})`
+    ctx.beginPath()
+    ctx.arc(0, 0, ICICLE_RADIUS * (0.3 + closing * 0.7), 0, Math.PI * 2)
+    ctx.fill()
+
+    // It stays out of sight until the last moment, then drops in from above.
+    const falling = Math.max(0, 1 - landing / 0.45)
+    if (falling > 0) {
+      const lift = (1 - falling * falling) * 260
+      ctx.translate(0, -lift)
+      ctx.lineWidth = 3
+      ctx.strokeStyle = INK
+      ctx.fillStyle = '#e4f6ff'
+      ctx.beginPath()
+      ctx.moveTo(-16, -70)
+      ctx.lineTo(16, -70)
+      ctx.lineTo(0, 10)
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.moveTo(-8, -64)
+      ctx.lineTo(-1, -64)
+      ctx.lineTo(-3, -20)
+      ctx.closePath()
+      ctx.fill()
+    }
+  }
   ctx.restore()
 }
 
@@ -641,6 +755,13 @@ export function drawScene(
   }
 
   drawTub(ctx, world, fx)
+
+  // Icicles fall from above, so they come down over the tub.
+  for (const icicle of world.icicles) {
+    if (visible(icicle.x, icicle.y, 300)) {
+      drawIcicle(ctx, icicle.x, icicle.y, icicleLanding(icicle, world.clock))
+    }
+  }
 
   for (const puff of fx.puffs) {
     const life = puff.age / puff.life

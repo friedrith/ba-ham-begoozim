@@ -98,3 +98,10 @@ export function pointAt(course: Course, at: number, offset = 0): Vec {
   const s = course.samples[indexAt(course, at)]
   return { x: s.x + s.nx * s.hw * offset, y: s.y + s.ny * s.hw * offset }
 }
+
+/** A point `gap` beyond the wall on `side` (-1 left bank, 1 right bank). */
+export function bankAt(course: Course, at: number, side: -1 | 1, gap: number): Vec {
+  const s = course.samples[indexAt(course, at)]
+  const across = (s.hw + gap) * side
+  return { x: s.x + s.nx * across, y: s.y + s.ny * across }
+}

@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 
 import { autopilot } from './autopilot'
-import { buildCourse, indexAt } from './course'
-import { LEVELS, type LevelDef } from './levels'
+import { bankAt, buildCourse, indexAt } from './course'
+import { LEVELS, SCENERY_GAP, SCENERY_RADIUS, type LevelDef } from './levels'
 import {
   createWorld,
   forwardOf,
@@ -289,6 +289,27 @@ describe('levels', () => {
       }
     })
   }
+
+  for (const level of LEVELS) {
+    test(`${level.id} keeps its scenery on the bank`, () => {
+      const course = buildCourse(level.path)
+      for (const scenery of level.scenery ?? []) {
+        const { x, y } = bankAt(course, scenery.at, scenery.side, SCENERY_GAP)
+        for (const s of course.samples) {
+          expect(Math.hypot(x - s.x, y - s.y)).toBeGreaterThan(
+            s.hw + SCENERY_RADIUS,
+          )
+        }
+      }
+    })
+  }
+
+  test('every level after The Boiler Room has a shelang', () => {
+    const start = LEVELS.findIndex((level) => level.id === 'boiler-room') + 1
+    for (const level of LEVELS.slice(start)) {
+      expect(level.scenery?.some((item) => item.kind === 'shelang')).toBe(true)
+    }
+  })
 
   for (const level of LEVELS) {
     test(`${level.id} can be finished`, () => {

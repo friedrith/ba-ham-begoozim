@@ -1,4 +1,5 @@
-import type { Theme } from '../engine/levels'
+import { bankAt, pointAt, type Course } from '../engine/course'
+import { SCENERY_GAP, type Scenery, type Theme } from '../engine/levels'
 import {
   CAN_RADIUS,
   finishIndex,
@@ -320,6 +321,279 @@ function drawBanding(
     }
   }
   ctx.globalAlpha = 1
+}
+
+/** A Persian bathroom hose, coiled on the bank with its nozzle dripping over the wall. */
+function drawShelang(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  angle: number,
+  clock: number,
+) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(angle)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+
+  ctx.beginPath()
+  ctx.moveTo(5, 0)
+  // Two and a half turns outwards, ending on the side facing the water.
+  for (let turn = 0; turn <= 2.5; turn += 0.05) {
+    const a = turn * Math.PI * 2 + Math.PI
+    const r = 5 + turn * 15
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r)
+  }
+  ctx.quadraticCurveTo(55, 30, SCENERY_GAP - 10, 0)
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 12
+  ctx.stroke()
+  ctx.strokeStyle = '#7cc142'
+  ctx.lineWidth = 7
+  ctx.stroke()
+  ctx.strokeStyle = '#f2e23c'
+  ctx.lineWidth = 2
+  ctx.setLineDash([7, 9])
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  ctx.fillStyle = '#c9c9c9'
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  ctx.roundRect(SCENERY_GAP - 12, -7, 24, 14, 3)
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = '#ffffff'
+  for (let i = 0; i < 3; i++) {
+    const drip = (clock * 0.9 + i / 3) % 1
+    ctx.globalAlpha = 1 - drip
+    ctx.beginPath()
+    ctx.arc(SCENERY_GAP + 16 + drip * 28, Math.sin(i * 2) * 4, 3, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
+/** The plastic ewer found beside every Persian toilet. Its spout faces the water. */
+function drawAftabeh(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  flip: number,
+) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(flip, 1)
+  ctx.lineWidth = 3
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  ctx.strokeStyle = INK
+
+  // The handle goes first, so that the body covers where it joins.
+  ctx.beginPath()
+  ctx.moveTo(-14, -22)
+  ctx.bezierCurveTo(-46, -30, -46, 12, -20, 8)
+  ctx.lineWidth = 9
+  ctx.stroke()
+  ctx.strokeStyle = '#e4572e'
+  ctx.lineWidth = 4
+  ctx.stroke()
+
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 3
+  ctx.fillStyle = '#e4572e'
+  ctx.beginPath()
+  ctx.moveTo(14, -6)
+  ctx.lineTo(42, -36)
+  ctx.lineTo(50, -30)
+  ctx.lineTo(20, 12)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(-12, -30)
+  ctx.bezierCurveTo(-34, -10, -32, 30, -18, 34)
+  ctx.lineTo(18, 34)
+  ctx.bezierCurveTo(32, 30, 34, -10, 12, -30)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = '#fff4dc'
+  ctx.beginPath()
+  ctx.ellipse(0, -30, 13, 5, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.restore()
+}
+
+/** A brass samovar with a teapot warming on top, gently steaming. */
+function drawSamovar(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  clock: number,
+) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.lineWidth = 3
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  ctx.strokeStyle = INK
+
+  ctx.fillStyle = '#d8a13a'
+  ctx.beginPath()
+  ctx.moveTo(-14, 26)
+  ctx.lineTo(-22, 44)
+  ctx.lineTo(22, 44)
+  ctx.lineTo(14, 26)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  for (const dir of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(dir * 31, -2, 7, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+
+  ctx.beginPath()
+  ctx.roundRect(-26, -24, 52, 52, 14)
+  ctx.fill()
+  ctx.stroke()
+  ctx.strokeStyle = '#8f6516'
+  ctx.beginPath()
+  ctx.moveTo(-26, -6)
+  ctx.lineTo(26, -6)
+  ctx.stroke()
+  ctx.strokeStyle = INK
+
+  // The tap.
+  ctx.fillStyle = '#2b1a12'
+  ctx.fillRect(-4, 6, 8, 16)
+
+  // The teapot on top.
+  ctx.fillStyle = '#3f7fbf'
+  ctx.beginPath()
+  ctx.ellipse(0, -36, 16, 12, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(14, -38)
+  ctx.lineTo(25, -44)
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)'
+  ctx.lineWidth = 4
+  for (let i = 0; i < 2; i++) {
+    const rise = (clock * 0.5 + i / 2) % 1
+    ctx.globalAlpha = 1 - rise
+    ctx.beginPath()
+    ctx.moveTo(26, -48 - rise * 14)
+    ctx.quadraticCurveTo(32, -54 - rise * 14, 26, -60 - rise * 14)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+/** A Persian rug laid out on the bank, with a medallion and a fringe on each end. */
+function drawFarsh(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  const w = 96
+  const h = 66
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(Math.sin(x + y) * 0.2)
+  ctx.lineCap = 'butt'
+
+  ctx.strokeStyle = '#fff4dc'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  for (let i = -h / 2 + 3; i < h / 2; i += 6) {
+    ctx.moveTo(-w / 2 - 8, i)
+    ctx.lineTo(w / 2 + 8, i)
+  }
+  ctx.stroke()
+
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 3
+  ctx.fillStyle = '#9e2a2b'
+  ctx.fillRect(-w / 2, -h / 2, w, h)
+  ctx.strokeRect(-w / 2, -h / 2, w, h)
+
+  ctx.strokeStyle = '#1f3a68'
+  ctx.lineWidth = 5
+  ctx.strokeRect(-w / 2 + 7, -h / 2 + 7, w - 14, h - 14)
+  ctx.strokeStyle = '#f2b632'
+  ctx.lineWidth = 2
+  ctx.strokeRect(-w / 2 + 12, -h / 2 + 12, w - 24, h - 24)
+
+  ctx.fillStyle = '#1f3a68'
+  ctx.strokeStyle = '#f2b632'
+  ctx.beginPath()
+  ctx.moveTo(-26, 0)
+  ctx.lineTo(0, -17)
+  ctx.lineTo(26, 0)
+  ctx.lineTo(0, 17)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#fff4dc'
+  ctx.beginPath()
+  ctx.arc(0, 0, 5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
+/** A pair of plastic bathroom slippers, left a little carelessly. */
+function drawDampayi(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(Math.sin(x + y) * 0.4)
+  for (const dir of [-1, 1]) {
+    ctx.save()
+    ctx.translate(dir * 15, dir * -5)
+    ctx.rotate(dir * 0.14)
+    ctx.lineWidth = 3
+    ctx.strokeStyle = INK
+    ctx.fillStyle = '#2f6fb5'
+    ctx.beginPath()
+    ctx.roundRect(-12, -27, 24, 54, 12)
+    ctx.fill()
+    ctx.stroke()
+    ctx.fillStyle = '#f6efe2'
+    ctx.beginPath()
+    ctx.roundRect(-12, -16, 24, 15, 3)
+    ctx.fill()
+    ctx.stroke()
+    ctx.restore()
+  }
+  ctx.restore()
+}
+
+function drawScenery(
+  ctx: CanvasRenderingContext2D,
+  course: Course,
+  scenery: Scenery,
+  clock: number,
+) {
+  const { x, y } = bankAt(course, scenery.at, scenery.side, SCENERY_GAP)
+  const wall = pointAt(course, scenery.at, scenery.side)
+  switch (scenery.kind) {
+    case 'shelang':
+      return drawShelang(ctx, x, y, Math.atan2(wall.y - y, wall.x - x), clock)
+    case 'aftabeh':
+      return drawAftabeh(ctx, x, y, wall.x < x ? -1 : 1)
+    case 'samovar':
+      return drawSamovar(ctx, x, y, clock)
+    case 'farsh':
+      return drawFarsh(ctx, x, y)
+    case 'dampayi':
+      return drawDampayi(ctx, x, y)
+  }
 }
 
 function drawCan(
@@ -788,6 +1062,12 @@ export function drawScene(
   ctx.strokeStyle = INK
   ctx.lineWidth = 16
   ctx.stroke()
+
+  // Under the hazards, so that scenery can never hide one.
+  for (const scenery of world.level.scenery ?? []) {
+    const { x, y } = bankAt(world.course, scenery.at, scenery.side, SCENERY_GAP)
+    if (visible(x, y)) drawScenery(ctx, world.course, scenery, world.clock)
+  }
 
   for (const whirl of world.whirls) {
     if (visible(whirl.x, whirl.y))

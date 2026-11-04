@@ -28,6 +28,7 @@ export const fa: Messages = {
     nextLevel: 'مرحلهٔ بعدی',
     levelCount: (count) => `مرحلهٔ ${count}`,
     totalStars: (count) => `${count} ستاره`,
+    sourceCode: 'کد بازی توی گیت‌هاب',
   },
   hud: {
     time: 'زمان',

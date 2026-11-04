@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Github, Star } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { LEVELS } from '../engine/levels'
@@ -14,6 +14,8 @@ import type { Progress } from '../progress'
 import { BeanFace } from './bean-face'
 import { LevelPreview } from './level-preview'
 import { RichText } from './rich-text'
+
+const REPO_URL = 'https://github.com/friedrith/ba-ham-begoozim'
 
 const arrowButton =
   'bg-white border-ink shrink-0 cursor-pointer rounded-full border-[3px] p-2 transition-transform hover:-translate-y-0.5 disabled:cursor-default disabled:opacity-30 disabled:hover:translate-y-0'
@@ -130,7 +132,16 @@ export function Menu({
   return (
     <div className="bg-ink/45 absolute inset-0 touch-pan-y overflow-y-auto overscroll-contain">
       <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-center gap-4 px-4 py-6">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-2">
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={t.menu.sourceCode}
+            className="bg-cream border-ink flex size-9 items-center justify-center rounded-full border-[3px]"
+          >
+            <Github aria-hidden="true" className="text-ink size-4" />
+          </a>
           <button
             type="button"
             lang={other.locale}

@@ -9,6 +9,8 @@ export const alt =
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
+const SLOGAN = 'Become the Fart King!'
+
 const INK = '#2b1a12'
 const CREAM = '#fff4dc'
 const SAUCE = '#d9441f'
@@ -182,7 +184,7 @@ function Scene() {
 export default async function OpengraphImage() {
   const [display, sans] = await Promise.all([
     loadFont('Bagel+Fat+One', en.menuTitle),
-    loadFont('Nunito:wght@800', en.tagline),
+    loadFont('Nunito:wght@800', SLOGAN),
   ])
 
   return new ImageResponse(
@@ -216,7 +218,7 @@ export default async function OpengraphImage() {
           style={{
             padding: '10px 24px',
             fontFamily: 'Nunito',
-            fontSize: 27,
+            fontSize: 36,
             whiteSpace: 'nowrap',
             color: INK,
             backgroundColor: CREAM,
@@ -224,7 +226,7 @@ export default async function OpengraphImage() {
             borderRadius: 999,
           }}
         >
-          {en.tagline}
+          {SLOGAN}
         </div>
       </div>
     </div>,

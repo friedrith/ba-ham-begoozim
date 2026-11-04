@@ -69,11 +69,14 @@ export type Messages = {
     menu: string
     rank: (rank: string) => string
     rankUp: (rank: string) => string
+    trophyUnlocked: (trophy: string) => string
     /** Shown on the button once the picture of the result is ready. */
     share: string
   }
   /** Earned by total stars, lowest first. */
   ranks: Record<RankId, string>
+  /** Earned by finishing every level. */
+  trophy: string
   /** One goes to each bean at the end of a race. `detail` gets the winning score. */
   awards: Record<AwardId, { title: string; detail: (value: string) => string }>
   online: {

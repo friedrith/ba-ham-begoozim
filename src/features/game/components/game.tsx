@@ -26,6 +26,7 @@ import {
 import { formatNumber, formatTime } from '../i18n'
 import { useLocale } from '../i18n/use-locale'
 import {
+  hasTrophy,
   loadProgress,
   rankFor,
   recordRun,
@@ -93,6 +94,7 @@ type Result = {
   harmonies: number
   wipeouts: number
   rankUp: boolean
+  trophyUnlocked: boolean
   card: ShareCardRun
 }
 
@@ -448,8 +450,8 @@ export function Game() {
       overlayRef.current = false
       setPaused(false)
       const stars = starsFor(world)
-      const before = rankFor(totalStars(loadProgress()))
-      let after = loadProgress()
+      const before = loadProgress()
+      let after = before
       // Watching the bots finish an online race doesn't earn anything.
       const onlineRoom = sessionRef.current?.getState().room
       if (
@@ -481,9 +483,11 @@ export function Game() {
         totalCans: world.cans.length,
         harmonies: world.harmonies,
         wipeouts: world.wipeouts,
-        rankUp: rank !== before,
+        rankUp: rank !== rankFor(totalStars(before)),
+        trophyUnlocked: hasTrophy(after) && !hasTrophy(before),
         card: {
           rank,
+          trophy: hasTrophy(after),
           stars: totalStars(after),
           levelName: tRef.current.levels[world.level.id].name,
           time: world.raceTime,
@@ -900,6 +904,11 @@ export function Game() {
                     t.ranks[result.card.rank],
                   )}
                 </p>
+                {result.trophyUnlocked && (
+                  <p className="font-display text-sauce text-center text-2xl">
+                    {t.result.trophyUnlocked(t.trophy)}
+                  </p>
+                )}
               </div>
               <ShareButton run={result.card} t={t} />
               {result.levelIndex + 1 < LEVELS.length && (

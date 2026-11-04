@@ -1,5 +1,12 @@
 import { clsx } from 'clsx'
-import { ChevronLeft, ChevronRight, Coffee, Github, Star } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Coffee,
+  Github,
+  Star,
+  Trophy,
+} from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { LEVELS } from '../engine/levels'
@@ -10,7 +17,13 @@ import {
   type Locale,
   type Messages,
 } from '../i18n'
-import { MAX_STARS, rankFor, totalStars, type Progress } from '../progress'
+import {
+  hasTrophy,
+  MAX_STARS,
+  rankFor,
+  totalStars,
+  type Progress,
+} from '../progress'
 import { BeanFace } from './bean-face'
 import { LevelPreview } from './level-preview'
 import { RichText } from './rich-text'
@@ -267,6 +280,15 @@ export function Menu({
               <p className="font-display text-sauce text-lg leading-none">
                 {t.ranks[rankFor(stars)]}
               </p>
+              {hasTrophy(progress) && (
+                <p className="font-display flex items-center gap-1 leading-none">
+                  <Trophy
+                    aria-hidden="true"
+                    className="fill-mustard text-ink size-4"
+                  />
+                  {t.trophy}
+                </p>
+              )}
             </div>
 
             <button

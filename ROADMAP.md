@@ -68,11 +68,12 @@ more seats.
 - [x] Sync the game between players
 - [x] Handle latency, disconnects and rejoining, and fill empty seats with the
       local player or the bot
-- [ ] Retune or scale the harmony window, which depends on near-simultaneous
-      blasts and will be the first thing latency breaks. Harmony now compares
-      press times, which holds up in simulation. It needs a real playtest.
+- [x] Retune or scale the harmony window, which depends on near-simultaneous
+      blasts and will be the first thing latency breaks. The window stays 140ms
+      but compares press times, and four people have finished a level with it.
 - [x] Deploy the [room service](workers/rooms/README.md) and measure it on real
       Cloudflare
+- [x] Let players name themselves, in the room or from the pause menu
 
 Design notes:
 

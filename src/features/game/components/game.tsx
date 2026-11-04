@@ -36,7 +36,13 @@ import {
 import { Sound } from '../render/sound'
 import { BeanFace } from './bean-face'
 import { FeedbackPanel } from './feedback-panel'
-import { Lobby, seatLabel, sessionErrorText } from './lobby'
+import {
+  loadPlayerName,
+  Lobby,
+  NameField,
+  seatLabel,
+  sessionErrorText,
+} from './lobby'
 import { isTextField, Menu, Stars } from './menu'
 import { normalizeCode, OnlineEntry } from './online-entry'
 import { Panel, PanelButton } from './panel'
@@ -273,6 +279,7 @@ export function Game() {
       url: ROOMS_URL,
       code,
       token: roomToken(),
+      name: loadPlayerName(),
       createSocket: devSocket(),
     })
     sessionRef.current = next
@@ -629,7 +636,7 @@ export function Game() {
               roomSeat.owner !== room?.you &&
               (roomSeat.status === 'here' || roomSeat.status === 'away')
             const owner = roomSeat && room && (
-              <span className="text-xs leading-none font-bold">
+              <span className="max-w-full truncate text-xs leading-none font-bold">
                 {seatLabel(t, roomSeat, room.you)}
               </span>
             )
@@ -804,6 +811,9 @@ export function Game() {
             <Panel title={t.paused.title}>
               {inOnlineRace && (
                 <p className="text-center font-bold">{t.online.raceGoesOn}</p>
+              )}
+              {inOnlineRace && session && room && (
+                <NameField t={t} you={room.you} session={session} />
               )}
               <PanelButton primary onClick={togglePause}>
                 {t.paused.resume}

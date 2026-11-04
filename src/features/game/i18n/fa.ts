@@ -92,6 +92,7 @@ export const fa: Messages = {
     seatsHint:
       'روی یه لوبیا بزن تا مال تو بشه. یه نفر می‌تونه چند تا رو با هم بچرخونه.',
     you: 'خودت',
+    yourName: 'اسمت',
     player: (number) => `بازیکن ${number}`,
     empty: 'خالی',
     bot: 'ربات',

@@ -29,6 +29,7 @@ export const fa: Messages = {
     levelCount: (count) => `مرحلهٔ ${count}`,
     totalStars: (count) => `${count} ستاره`,
     sourceCode: 'کد بازی توی گیت‌هاب',
+    buyCoffee: 'یه قهوه مهمونم کن',
   },
   hud: {
     time: 'زمان',

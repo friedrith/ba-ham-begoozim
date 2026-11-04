@@ -22,6 +22,7 @@ where changes wait until the next release.
 ### Fixed
 
 - Arrow keys in the room code field no longer move the level carousel ([#23](https://github.com/friedrith/ba-ham-begoozim/pull/23)).
+- Sharing the evidence now sends the picture. It came with text, which many apps kept instead of the image ([#37](https://github.com/friedrith/ba-ham-begoozim/pull/37)).
 
 ### Changed
 

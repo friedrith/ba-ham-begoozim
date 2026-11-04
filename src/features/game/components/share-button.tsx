@@ -50,11 +50,8 @@ export function ShareButton({ run, t }: { run: ShareCardRun; t: Messages }) {
 
   const share = async () => {
     if (!file) return
-    const data = {
-      files: [file],
-      title: t.title,
-      text: `${t.ranks[run.rank]}. ${t.tagline}`,
-    }
+    // Only the file: given text as well, many apps keep the text and drop the picture.
+    const data = { files: [file] }
     if (!navigator.canShare?.(data)) {
       download(file)
       track('card_shared', { rank: run.rank, method: 'download' })

@@ -1,0 +1,85 @@
+# Roadmap
+
+Listed in the order we plan to build them.
+
+## 1. Deploy to Vercel
+
+Put the game online under the `interaction-dynamics` Vercel account.
+
+- [ ] Create the project under `interaction-dynamics` and link it to this repo
+- [ ] Deploy `master` to production and each PR to a preview URL
+- [ ] Add the live URL to the README
+
+**Done when** merging to `master` updates the live game without manual steps.
+
+## 2. GitHub Actions
+
+Nothing checks a PR today. The scripts already exist, so this only needs wiring.
+
+- [ ] Run on every PR and on pushes to `master`, using Bun
+- [ ] Run `bun run ci` (lint and format check), `bun run typecheck`, `bun test`
+      and `bun run build`
+- [ ] Make the checks required before merging to `master`
+
+Deployment stays with Vercel. Actions only checks the code.
+
+**Done when** a PR with a lint error, type error or unbeatable level can't merge.
+
+## 3. More levels
+
+There are three levels today. Add more with a steadily rising difficulty curve,
+then introduce original content once the existing hazards are used up.
+
+- [ ] **Harder levels:** new courses using the existing hazards, with narrower
+      channels, tighter pars, and hazards combined in tougher ways
+- [ ] **New content:** new themes (`Theme`) and new hazards (`LevelItem`), each
+      with its own rendering, sound and a level that teaches it
+- [ ] Rework the menu so it stays readable with many levels
+
+The test suite runs a bot through every level, so a course it can't finish fails.
+Harder levels will probably need a better bot in `engine/autopilot.ts`. It must
+not become easier to pass by weakening that test.
+
+**Done when** the last level is clearly harder than `The Boiler Room`, and at
+least one level uses a theme and a hazard that don't exist today.
+
+## 4. iPad version (touch)
+
+Four corner pads already exist, but they are small, always visible, and labelled
+with keyboard keys. The goal is a version that feels made for a shared tablet.
+
+- [ ] Detect a touch screen and turn on touch mode only then
+- [ ] In touch mode, touching a screen corner triggers that bean's blast, with a
+      tap target large enough for four people sharing one iPad
+- [ ] Hide the keyboard labels and adapt the menu hints in touch mode
+- [ ] Keep the current layout on devices without a touch screen
+- [ ] Test on a real iPad: four simultaneous touches, sound unlocking on first
+      touch, no page zoom or scroll, portrait and landscape
+
+**Done when** four people can finish a level on one iPad without a keyboard.
+
+## 5. Online co-op
+
+Let players on different devices share one tub, with each player taking one or
+more seats.
+
+- [ ] **Spike first:** choose the transport and test how latency feels in play
+- [ ] Rooms: create one, join with a short code or link, choose seats
+- [ ] Sync the game between players
+- [ ] Handle latency, disconnects and rejoining, and fill empty seats with the
+      local player or the bot
+- [ ] Retune or scale the harmony window, which depends on near-simultaneous
+      blasts and will be the first thing latency breaks
+
+Design notes:
+
+- The engine has no DOM dependency, so it can also run on a server.
+- The fixed 120 Hz step in `stepWorld` makes its inputs easy to send over a
+  network. Prefer one authoritative simulation over lockstep, because `Math.sin`
+  and `Math.exp` aren't guaranteed to match across browsers.
+- This is the only item that needs a backend. The spike should compare Vercel
+  WebSockets with a managed realtime service, including how a room stays on one
+  instance.
+
+**Done when** four players on separate devices can finish a level together over
+a normal internet connection.

@@ -50,6 +50,7 @@ let open: TestPeer[]
 let saved: SavedRoom | null
 let ticking: boolean
 let room: Room
+let reports: [string, number][]
 
 const isTicking = () => ticking
 
@@ -61,6 +62,9 @@ const host: RoomHost = {
   },
   setTicking: (on) => {
     ticking = on
+  },
+  reportPlayers: (code, count) => {
+    reports.push([code, count])
   },
 }
 
@@ -106,7 +110,54 @@ beforeEach(() => {
   open = []
   saved = null
   ticking = false
+  reports = []
   room = new Room(host, newRoom('123456'))
+})
+
+const counts = () => reports.map(([, count]) => count)
+
+describe('player count', () => {
+  test('reports people arriving and leaving, under the room code', () => {
+    const a = join('a')
+    const b = join('b')
+    say(a, { t: 'leave' })
+    open = open.filter((peer) => peer !== a)
+    room.left(a)
+    drop(b)
+    expect(reports[0]).toEqual(['123456', 1])
+    expect(counts()).toEqual([1, 2, 1, 0])
+  })
+
+  test('stays quiet when the room changes but the number does not', () => {
+    const a = join('a')
+    join('b')
+    reports = []
+    say(a, { t: 'seat', seat: 0, take: true })
+    say(a, { t: 'name', name: 'Sam' })
+    expect(reports).toEqual([])
+  })
+
+  test('counts a rejoining player once', () => {
+    join('a')
+    join('a')
+    expect(counts()).toEqual([1])
+  })
+
+  test('the last person leaving a room that hibernated still gets reported', () => {
+    const a = join('a')
+    if (!saved) throw new Error('nothing saved')
+    room = new Room(host, saved)
+    reports = []
+    drop(a)
+    expect(counts()).toEqual([0])
+  })
+
+  test('the host can repeat the report', () => {
+    join('a')
+    reports = []
+    room.reportPlayers()
+    expect(counts()).toEqual([1])
+  })
 })
 
 describe('seats', () => {

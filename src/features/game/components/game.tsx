@@ -25,7 +25,13 @@ import {
 } from '../engine/world'
 import { formatNumber, formatTime } from '../i18n'
 import { useLocale } from '../i18n/use-locale'
-import { loadProgress, recordRun, type Progress } from '../progress'
+import {
+  loadProgress,
+  rankFor,
+  recordRun,
+  totalStars,
+  type Progress,
+} from '../progress'
 import { applyEvent, createEffects, updateEffects } from '../render/effects'
 import {
   createCamera,
@@ -33,12 +39,15 @@ import {
   drawScene,
   updateCamera,
 } from '../render/scene'
+import type { ShareCardRun } from '../render/share-card'
 import { Sound } from '../render/sound'
+import { awardsFor, createTally, tallyEvent, type Tally } from '../tally'
 import { BeanFace } from './bean-face'
 import { Lobby, seatLabel, sessionErrorText } from './lobby'
 import { Menu, Stars } from './menu'
 import { normalizeCode, OnlineEntry } from './online-entry'
 import { Panel, PanelButton } from './panel'
+import { ShareButton } from './share-button'
 
 const KEY_SEATS: Record<string, number[]> = {
   KeyQ: [0],
@@ -83,6 +92,8 @@ type Result = {
   totalCans: number
   harmonies: number
   wipeouts: number
+  rankUp: boolean
+  card: ShareCardRun
 }
 
 type Screen =
@@ -162,6 +173,8 @@ export function Game() {
   const padPointers = useRef(SEATS.map(() => new Set<number>()))
   const padRefs = useRef<(HTMLButtonElement | null)[]>([])
   const fxRef = useRef(createEffects())
+  /** Who did what on this device's race. Online the session keeps it instead. */
+  const tallyRef = useRef(createTally())
   const soundRef = useRef<Sound | null>(null)
   const timerRef = useRef<HTMLSpanElement>(null)
   const cansRef = useRef<HTMLSpanElement>(null)
@@ -236,6 +249,7 @@ export function Game() {
       soundRef.current?.stopAll()
       worldRef.current = createWorld(LEVELS[levelIndex])
       fxRef.current = createEffects()
+      tallyRef.current = createTally()
       releaseAll()
       setResult(null)
       setPaused(false)
@@ -252,6 +266,7 @@ export function Game() {
     soundRef.current?.stopAll()
     worldRef.current = createWorld(LEVELS[0])
     fxRef.current = createEffects()
+    tallyRef.current = createTally()
     releaseAll()
     setResult(null)
     setPaused(false)
@@ -428,19 +443,23 @@ export function Game() {
     resize()
     window.addEventListener('resize', resize)
 
-    const handleFinish = (world: World) => {
+    const handleFinish = (world: World, tally: Tally) => {
       if (screenRef.current.name === 'menu') return
       overlayRef.current = false
       setPaused(false)
       const stars = starsFor(world)
+      const before = rankFor(totalStars(loadProgress()))
+      let after = loadProgress()
       // Watching the bots finish an online race doesn't earn anything.
       const onlineRoom = sessionRef.current?.getState().room
       if (
         !onlineRoom ||
         onlineRoom.seats.some(({ owner }) => owner === onlineRoom.you)
       ) {
-        setProgress(recordRun(world.level.id, stars, world.raceTime))
+        after = recordRun(world.level.id, stars, world.raceTime)
+        setProgress(after)
       }
+      const rank = rankFor(totalStars(after))
       // Online races have no `level_started` yet, so counting these would skew the funnel.
       if (screenRef.current.name === 'play') {
         track('level_finished', {
@@ -462,6 +481,16 @@ export function Game() {
         totalCans: world.cans.length,
         harmonies: world.harmonies,
         wipeouts: world.wipeouts,
+        rankUp: rank !== before,
+        card: {
+          rank,
+          stars: totalStars(after),
+          levelName: tRef.current.levels[world.level.id].name,
+          time: world.raceTime,
+          harmonies: world.harmonies,
+          wipeouts: world.wipeouts,
+          awards: awardsFor(tally),
+        },
       })
     }
 
@@ -496,10 +525,12 @@ export function Game() {
         }
 
         const events = live && raced ? live.takeEvents() : world.events
+        const tally = live && raced ? live.tally : tallyRef.current
         for (const event of events) {
-          applyEvent(fxRef.current, world, event, tRef.current.fx)
+          if (!raced) tallyEvent(tally, event, world.clock)
+          applyEvent(fxRef.current, world, event, tRef.current, tally.lastBlame)
           if (!demo) soundRef.current?.handle(event)
-          if (event.type === 'finish') handleFinish(world)
+          if (event.type === 'finish') handleFinish(world, tally)
         }
         if (!raced) world.events.length = 0
         updateEffects(fxRef.current, world, dt)
@@ -841,7 +872,36 @@ export function Game() {
                     {formatNumber(result.wipeouts, t.locale)}
                   </dd>
                 </dl>
+                <ul className="flex w-full flex-col gap-1">
+                  {result.card.awards.map((award, seat) => (
+                    <li key={seat} className="flex items-center gap-2">
+                      <BeanFace seat={seat} className="size-9 shrink-0" />
+                      <span className="flex min-w-0 flex-col text-xs leading-tight">
+                        <span className="font-display text-base leading-tight">
+                          {t.awards[award.id].title}
+                        </span>
+                        <span>
+                          {t.seats[seat].name} ·{' '}
+                          {t.awards[award.id].detail(
+                            formatNumber(award.value, t.locale),
+                          )}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p
+                  className={clsx(
+                    'text-center font-bold',
+                    result.rankUp && 'font-display text-sauce text-2xl font-normal',
+                  )}
+                >
+                  {(result.rankUp ? t.result.rankUp : t.result.rank)(
+                    t.ranks[result.card.rank],
+                  )}
+                </p>
               </div>
+              <ShareButton run={result.card} t={t} />
               {result.levelIndex + 1 < LEVELS.length && (
                 <PanelButton
                   primary

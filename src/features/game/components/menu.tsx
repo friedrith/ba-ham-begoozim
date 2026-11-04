@@ -10,7 +10,7 @@ import {
   type Locale,
   type Messages,
 } from '../i18n'
-import type { Progress } from '../progress'
+import { MAX_STARS, rankFor, totalStars, type Progress } from '../progress'
 import { BeanFace } from './bean-face'
 import { LevelPreview } from './level-preview'
 import { RichText } from './rich-text'
@@ -75,10 +75,7 @@ export function Menu({
   const sliderRef = useRef<HTMLOListElement>(null)
   const [selected, setSelected] = useState(() => nextLevelIndex(progress))
   const selectedRef = useRef(selected)
-  const totalStars = LEVELS.reduce(
-    (total, { id }) => total + (progress[id]?.stars ?? 0),
-    0,
-  )
+  const stars = totalStars(progress)
   const other = MESSAGES[t.locale === 'fa' ? 'en' : 'fa']
 
   /** The slider scrolls into negative numbers in right-to-left layouts. */
@@ -263,9 +260,12 @@ export function Menu({
                     className="fill-mustard text-ink size-4"
                   />
                   {t.menu.totalStars(
-                    `${formatNumber(totalStars, t.locale)}/${formatNumber(LEVELS.length * 3, t.locale)}`,
+                    `${formatNumber(stars, t.locale)}/${formatNumber(MAX_STARS, t.locale)}`,
                   )}
                 </span>
+              </p>
+              <p className="font-display text-sauce text-lg leading-none">
+                {t.ranks[rankFor(stars)]}
               </p>
             </div>
 

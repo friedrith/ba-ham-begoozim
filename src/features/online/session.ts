@@ -7,6 +7,7 @@ import {
   type GameEvent,
   type World,
 } from '../game/engine/world'
+import { createTally, tallyEvent, type Tally } from '../game/tally'
 import { dropOldInputs, forecast, type OwnInput } from './predict'
 import {
   CLOSE_CODES,
@@ -137,6 +138,8 @@ export class OnlineSession {
   private blastEchoes: number[][] = SEATS.map(() => [])
   private releaseEchoes: number[][] = SEATS.map(() => [])
   private events: { at: number; event: GameEvent }[] = []
+  /** Counts what the room reports, before echoes go, so every player sees the same one. */
+  tally: Tally = createTally()
 
   constructor(options: SessionOptions) {
     this.now = options.now ?? Date.now
@@ -422,6 +425,7 @@ export class OnlineSession {
       this.shown = null
       this.own = []
       this.events = []
+      this.tally = createTally()
       this.sent = SEATS.map(() => false)
       this.resetPrediction()
       if (view.phase === 'race') this.burstLeft = PING_BURST
@@ -437,6 +441,7 @@ export class OnlineSession {
     this.snapshot = { w: snapshot, s: roomTime, clock: world.clock }
     dropOldInputs(this.own, world.clock)
     for (const event of events) {
+      tallyEvent(this.tally, event, world.clock)
       if (!this.isEcho(event) && event.type !== 'finish') this.queueEvent(event)
     }
     // Someone who rejoins at the finish never saw the event, but still gets the result.

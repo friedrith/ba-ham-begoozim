@@ -17,6 +17,7 @@ type GameEvents = {
     reason: 'restart' | 'menu'
     race_time: number
   }
+  card_shared: { rank: string; method: 'share' | 'download' }
 }
 
 // PostHog only loads when a key is configured, see instrumentation-client.ts.

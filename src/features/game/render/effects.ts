@@ -100,16 +100,19 @@ function addWord(
   text: string,
   color: string,
   size: number,
+  life = 0.85,
 ) {
-  fx.words.push({ x, y, text, color, size, age: 0, life: 0.85 })
+  fx.words.push({ x, y, text, color, size, age: 0, life })
 }
 
 export function applyEvent(
   fx: Effects,
   world: World,
   event: GameEvent,
-  words: Messages['fx'],
+  t: Messages,
+  blamed: number | null,
 ) {
+  const words = t.fx
   switch (event.type) {
     case 'blast': {
       fx.squash[event.seat] = 0.25
@@ -156,6 +159,19 @@ export function applyEvent(
       fx.shake = 14
       addWord(fx, event.x, event.y - 30, words.respawn, '#ff6b6b', 40)
       burst(fx, event.x, event.y, 30, ['#ffffff', '#cfeff0', '#e4572e'])
+      // The tub has already moved to the checkpoint, and the camera with it, so the
+      // accusation goes where everyone is looking and stays long enough to read.
+      addWord(
+        fx,
+        world.x,
+        world.y - 80,
+        blamed === null
+          ? words.blameNobody
+          : words.blame[fx.wordIndex++ % words.blame.length](t.seats[blamed].name),
+        '#fff4dc',
+        30,
+        2,
+      )
       break
     default:
       break

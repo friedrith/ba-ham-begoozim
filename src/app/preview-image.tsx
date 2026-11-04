@@ -1,9 +1,12 @@
 import { ImageResponse } from 'next/og'
 
 import { SEATS } from '@/features/game/engine/world'
+import type { Messages } from '@/features/game/i18n'
 import { BEAN_COLORS } from '@/features/game/render/scene'
 
 export const size = { width: 1200, height: 630 }
+
+type Dir = Messages['dir']
 
 const INK = '#2b1a12'
 const CREAM = '#fff4dc'
@@ -175,20 +178,57 @@ function Scene() {
   )
 }
 
+/**
+ * The image renderer only gets Persian right within one unbroken run: between runs it
+ * goes left to right. So each line is one run, with no spaces it could break at.
+ */
+function Text({ text, dir }: { text: string; dir: Dir }) {
+  if (dir === 'ltr') return text
+  return (
+    <div
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}
+    >
+      {text.split('\n').map((line) => (
+        <div key={line}>{line.replaceAll(' ', ' ')}</div>
+      ))}
+    </div>
+  )
+}
+
 /** The picture link previews show: the tub on the water, with a headline on the bank. */
 export async function renderPreviewImage({
   headline,
   headlineSize,
   badge,
+  dir,
 }: {
   headline: string
   headlineSize: number
   badge: string
+  dir: Dir
 }) {
-  const [display, sans] = await Promise.all([
-    loadFont('Bagel+Fat+One', headline),
-    loadFont('Nunito:wght@800', badge),
-  ])
+  const rtl = dir === 'rtl'
+  // A second font makes the renderer treat joined Persian letters as missing, and crash.
+  const fonts = rtl
+    ? [
+        {
+          name: 'Display',
+          data: await loadFont('Lalezar', `${headline}${badge} `),
+          weight: 400 as const,
+        },
+      ]
+    : [
+        {
+          name: 'Display',
+          data: await loadFont('Bagel+Fat+One', headline),
+          weight: 400 as const,
+        },
+        {
+          name: 'Sans',
+          data: await loadFont('Nunito:wght@800', badge),
+          weight: 800 as const,
+        },
+      ]
 
   return new ImageResponse(
     <div style={{ display: 'flex', width: '100%', height: '100%' }}>
@@ -198,29 +238,33 @@ export async function renderPreviewImage({
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          alignItems: 'flex-start',
+          alignItems: rtl ? 'flex-end' : 'flex-start',
           gap: 32,
           width: 600,
           height: '100%',
-          paddingLeft: 56,
+          padding: '0 24px 0 56px',
         }}
       >
         <div
           style={{
+            display: 'flex',
             width: 520,
-            fontFamily: 'Bagel Fat One',
+            fontFamily: 'Display',
             fontSize: headlineSize,
-            lineHeight: 1.02,
+            // Persian letters reach further above and below the line.
+            lineHeight: rtl ? 1.3 : 1.02,
             color: SAUCE,
             WebkitTextStroke: `3px ${INK}`,
           }}
         >
-          {headline}
+          <Text text={headline} dir={dir} />
         </div>
         <div
           style={{
-            padding: '10px 24px',
-            fontFamily: 'Nunito',
+            display: 'flex',
+            // Persian is measured wider than it's drawn, which already leaves room on the right.
+            padding: rtl ? '10px 0 10px 32px' : '10px 24px',
+            fontFamily: rtl ? 'Display' : 'Sans',
             fontSize: 36,
             whiteSpace: 'nowrap',
             color: INK,
@@ -229,16 +273,10 @@ export async function renderPreviewImage({
             borderRadius: 999,
           }}
         >
-          {badge}
+          <Text text={badge} dir={dir} />
         </div>
       </div>
     </div>,
-    {
-      ...size,
-      fonts: [
-        { name: 'Bagel Fat One', data: display, weight: 400 },
-        { name: 'Nunito', data: sans, weight: 800 },
-      ],
-    },
+    { ...size, fonts },
   )
 }

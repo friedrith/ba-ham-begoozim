@@ -9,7 +9,7 @@ export const MESSAGES: Record<Locale, Messages> = { en, fa }
 const STORAGE_KEY = 'toot-canal:locale'
 const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹'
 
-function isLocale(value: string | null): value is Locale {
+export function isLocale(value: string | null): value is Locale {
   return value !== null && Object.hasOwn(MESSAGES, value)
 }
 
@@ -33,7 +33,18 @@ export function loadLocale(): Locale {
   } catch {
     // Private windows can refuse storage. Fall back to the browser's language.
   }
-  return pickLocale(saved, navigator.languages)
+  // A link that previewed in one language should open in it, unless the player already chose.
+  const linked = new URLSearchParams(window.location.search).get('lang')
+  return pickLocale(
+    saved,
+    linked ? [linked, ...navigator.languages] : navigator.languages,
+  )
+}
+
+/** Sets the language on a link, so its preview matches. English is the default, so it stays out. */
+export function setLinkLocale(url: URL, locale: Locale) {
+  if (locale === 'en') url.searchParams.delete('lang')
+  else url.searchParams.set('lang', locale)
 }
 
 export function saveLocale(locale: Locale) {

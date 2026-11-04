@@ -7,6 +7,24 @@ export const en: Messages = {
   title: 'Ba Ham Begoozim',
   menuTitle: 'Ba Ham Begoozim',
   tagline: 'Four beans. One bathtub. No engine.',
+  linkPreview: {
+    game: {
+      title: 'Ba Ham Begoozim: the co-op bathtub fart game',
+      description:
+        'Four baked beans steer one bathtub by farting in harmony. No engine, no shame. Play together on one device or online.',
+      alt: 'Four baked beans in a clawfoot bathtub, blasting their way down a canal.',
+      headline: 'Ba Ham Begoozim',
+      badge: 'Become the Fart King!',
+    },
+    invite: {
+      title: 'A farter invited you to a fart game',
+      description:
+        'Hop in the bathtub! Four baked beans, one tub, and the only way forward is blasting in harmony.',
+      alt: 'Four baked beans in a clawfoot bathtub, inviting you to a fart game.',
+      headline: 'A farter invited you to a fart game',
+      badge: 'Ba Ham Begoozim',
+    },
+  },
   menu: {
     levels: 'Levels',
     howToPlay: 'How to play',

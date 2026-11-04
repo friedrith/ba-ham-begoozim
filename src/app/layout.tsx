@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import { Bagel_Fat_One, Lalezar, Nunito, Vazirmatn } from 'next/font/google'
 import type { ReactNode } from 'react'
 
+import { en } from '@/features/game/i18n/en'
+
 import './globals.css'
 
 const bagel = Bagel_Fat_One({
@@ -33,24 +35,11 @@ const vazirmatn = Vazirmatn({
   preload: false,
 })
 
-const siteName = 'Ba Ham Begoozim'
-const title = `${siteName} — Co-op Baked Bean Bathtub Game`
-const description =
-  'A co-op browser game: four baked beans steer one bathtub by blasting in harmony. Play together on the same device or remotely online.'
-
+// The game page replaces this with a preview in the link's language.
 export const metadata: Metadata = {
   metadataBase: new URL('https://gooz.zendegi.io'),
-  title,
-  description,
-  // The preview image itself comes from opengraph-image.tsx.
-  openGraph: {
-    type: 'website',
-    url: '/',
-    siteName,
-    title,
-    description,
-  },
-  twitter: { card: 'summary_large_image' },
+  title: en.linkPreview.game.title,
+  description: en.linkPreview.game.description,
 }
 
 export const viewport: Viewport = {

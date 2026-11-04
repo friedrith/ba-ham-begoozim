@@ -115,7 +115,10 @@ export const en: Messages = {
     intro:
       'Everyone on their own device. Make a room and send your friends the link.',
     create: 'Make a room',
+    or: 'OR',
+    joinRoom: 'Join a room',
     join: 'Join',
+    cancel: 'Cancel',
     codeLabel: 'Room code',
     connecting: 'Connecting…',
     notFound: 'There’s no room with that code. It may have closed.',

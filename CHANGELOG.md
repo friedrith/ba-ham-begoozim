@@ -17,6 +17,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Play online has a larger **Make a room** button, and joining by code now happens in a popup ([#27](https://github.com/friedrith/ba-ham-begoozim/pull/27)).
 - README and metadata base use the new domain, gooz.zendegi.io, and the README shows the game on a phone ([#20](https://github.com/friedrith/ba-ham-begoozim/pull/20)).
 
 ### Fixed

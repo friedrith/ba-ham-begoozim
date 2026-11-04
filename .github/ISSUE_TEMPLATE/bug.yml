@@ -1,0 +1,21 @@
+name: Report a bug
+description: Something broke or behaved strangely in the game.
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we reproduce it?
+      description: The level, solo or online, and what you pressed.
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: iPad, Safari

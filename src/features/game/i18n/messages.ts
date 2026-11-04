@@ -41,6 +41,22 @@ export type Messages = {
     sourceCode: string
     /** Spoken name of the Buy Me a Coffee icon link. */
     buyCoffee: string
+    /** Spoken name and tooltip of the feedback icon button. */
+    feedback: string
+  }
+  feedback: {
+    title: string
+    /** Spoken name of the group of kinds. */
+    kind: string
+    kinds: { bug: string; feature: string; feedback: string }
+    message: string
+    email: string
+    send: string
+    sending: string
+    cancel: string
+    close: string
+    sent: string
+    failed: string
   }
   hud: {
     time: string

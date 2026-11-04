@@ -1,10 +1,16 @@
 import { SAMPLE_SPACING } from './course'
 import {
+  ANAR_RADIUS,
+  anarPosition,
+  ATASH_RADIUS,
+  farshCovers,
   forwardOf,
   gateBar,
   ICICLE_RADIUS,
   icicleLanding,
+  isBurning,
   paddleBar,
+  SAMOVAR_RADIUS,
   urchinPosition,
   type Gate,
   type Paddle,
@@ -29,6 +35,13 @@ const BAR_REACH = 34
 const ICICLE_REACH = ICICLE_RADIUS + 66
 const ICICLE_MARGIN = 0.5
 const SWALLOW_REACH = 60
+const SAMOVAR_REACH = SAMOVAR_RADIUS + 44
+const ANAR_REACH = ANAR_RADIUS + 58
+const ANAR_MARGIN = 0.3
+const ATASH_REACH = ATASH_RADIUS + 66
+const ATASH_MARGIN = 0.4
+/** Enough to go round a wet carpet when there's room, but not worth stopping for. */
+const SOGGY = 8
 const TUB_HALF_LENGTH = 62
 const BLOCKED = 100
 /** Steers the line towards a gate's gap, without counting as a risk to slow down for. */
@@ -165,6 +178,9 @@ function nearbyHazards(world: World) {
       side: gatePosition(gate, world.x, world.y).across >= 0 ? 1 : -1,
     })),
     paddles: world.paddles.filter(near),
+    samovars: world.samovars.filter(near),
+    atashes: world.atashes.filter(near),
+    anars: world.anars.filter(near),
     cans: world.cans.filter((can) => !can.taken && near(can)),
   }
 }
@@ -204,6 +220,32 @@ function spotCost(hazards: Hazards, x: number, y: number, clock: number) {
     if (Math.hypot(paddle.x - x, paddle.y - y) > paddle.length + BAR_REACH) continue
     if (paddleClearance(paddle, clock, x, y) < BAR_REACH) cost += BLOCKED
   }
+  for (const samovar of hazards.samovars) {
+    const d = Math.hypot(samovar.x - x, samovar.y - y)
+    if (d < SAMOVAR_REACH) cost += BLOCKED
+    else if (d < SAMOVAR_REACH + 40) cost += (SAMOVAR_REACH + 40 - d) * 0.6
+  }
+  for (const anar of hazards.anars) {
+    // Timing guesses are rough, so stay clear of where it was and where it's going too.
+    let d = Infinity
+    for (const t of [clock - ANAR_MARGIN, clock, clock + ANAR_MARGIN]) {
+      const p = anarPosition(anar, t)
+      d = Math.min(d, Math.hypot(p.x - x, p.y - y))
+    }
+    if (d < ANAR_REACH) cost += FATAL
+    else if (d < ANAR_REACH + 40) cost += (ANAR_REACH + 40 - d) * 0.6
+  }
+  for (const atash of hazards.atashes) {
+    if (Math.hypot(atash.x - x, atash.y - y) > ATASH_REACH) continue
+    // Timing guesses are rough, so stay clear either side of when it burns.
+    if (
+      isBurning(atash, clock - ATASH_MARGIN) ||
+      isBurning(atash, clock) ||
+      isBurning(atash, clock + ATASH_MARGIN)
+    ) {
+      cost += FATAL
+    }
+  }
   for (const can of hazards.cans) {
     if (Math.hypot(can.x - x, can.y - y) < 44) cost -= CAN_BONUS
   }
@@ -233,9 +275,13 @@ function planLine(world: World, hazards: Hazards, speed: number) {
     for (let lane = 0; lane < LANES; lane++) {
       const offset = room * ((lane / (LANES - 1)) * 2 - 1)
       offsets[i][lane] = offset
+      const soggy = world.farshes.some((farsh) =>
+        farshCovers(farsh, start + i, offset / s.hw),
+      )
       costs[i][lane] =
         spotCost(hazards, s.x + s.nx * offset, s.y + s.ny * offset, clock) +
-        offset * offset * CENTRE_COST
+        offset * offset * CENTRE_COST +
+        (soggy ? SOGGY : 0)
     }
     const step = SAMPLE_SPACING / Math.max(travelSpeed, 100)
     travelSpeed +=

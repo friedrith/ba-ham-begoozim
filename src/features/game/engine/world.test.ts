@@ -1,20 +1,18 @@
 import { describe, expect, test } from 'bun:test'
 
 import { autopilot } from './autopilot'
-import { bankAt, bankLine, buildCourse, indexAt } from './course'
+import { buildCourse, indexAt } from './course'
+import { LEVELS, type LevelDef } from './levels'
 import {
-  LEVELS,
-  SCENERY_GAP,
-  SCENERY_RADIUS,
-  sceneryRuns,
-  type LevelDef,
-  type Scenery,
-} from './levels'
-import {
+  anarPosition,
   createWorld,
+  CAN_RADIUS,
   forwardOf,
   ICICLE_WARNING,
   icicleLanding,
+  isBurning,
+  isSteaming,
+  SAMOVAR_RADIUS,
   STEP,
   stepWorld,
   type World,
@@ -244,6 +242,109 @@ describe('ice', () => {
   })
 })
 
+describe('samovars', () => {
+  test('stop the tub from passing through', () => {
+    const world = worldWith([
+      { kind: 'samovar', at: 0.2, period: 1000, phase: 500 },
+    ])
+    const samovar = world.samovars[0]
+    world.x = samovar.x
+    world.y = samovar.y + 150
+    world.vy = -300
+    world.angle = 0
+    world.sampleIndex = indexAt(world.course, 0.2)
+    for (let t = 0; t < 1; t += STEP) press(world)
+    expect(world.y).toBeGreaterThan(samovar.y)
+    expect(world.events.some((e) => e.type === 'bump')).toBe(true)
+    expect(world.wipeouts).toBe(0)
+  })
+
+  test('shove the tub away while steaming, and leave it alone otherwise', () => {
+    const shoved = (clock: number) => {
+      const world = worldWith([{ kind: 'samovar', at: 0.2, period: 100 }])
+      const samovar = world.samovars[0]
+      world.x = samovar.x + 90
+      world.y = samovar.y
+      world.sampleIndex = indexAt(world.course, 0.2)
+      world.clock = clock
+      expect(isSteaming(samovar, clock)).toBe(clock === 100)
+      press(world)
+      return world.vx
+    }
+    expect(shoved(100)).toBeGreaterThan(0)
+    expect(shoved(50)).toBe(0)
+  })
+})
+
+describe('farshes', () => {
+  const coasting = (offset: number) => {
+    const world = worldWith([
+      { kind: 'farsh', from: 0, to: 1, offset: 0.6, width: 0.4 },
+    ])
+    world.x = offset
+    world.vy = -200
+    for (let t = 0; t < 1; t += STEP) press(world)
+    return world
+  }
+
+  test('drag a tub on the carpet, but not one beside it', () => {
+    const on = coasting(100)
+    const beside = coasting(-100)
+    expect(on.onFarsh).toBe(true)
+    expect(beside.onFarsh).toBe(false)
+    expect(Math.abs(on.vy)).toBeLessThan(Math.abs(beside.vy) * 0.5)
+  })
+
+  test('squelch once on the way onto a carpet', () => {
+    const world = coasting(100)
+    expect(world.events.filter((e) => e.type === 'soak')).toHaveLength(1)
+  })
+})
+
+describe('atashes', () => {
+  const standingOn = (atash: { x: number; y: number }, world: World) => {
+    world.x = atash.x
+    world.y = atash.y
+    world.vx = 0
+    world.vy = 0
+    world.sampleIndex = indexAt(world.course, 0.2)
+  }
+
+  test('are safe to cross while they smoulder, and lethal once they burn', () => {
+    const world = worldWith([{ kind: 'atash', at: 0.2, period: 4 }])
+    const atash = world.atashes[0]
+    while (isBurning(atash, world.clock)) press(world)
+    world.grace = 0
+    world.wipeouts = 0
+    while (!isBurning(atash, world.clock + STEP)) {
+      standingOn(atash, world)
+      press(world)
+    }
+    expect(world.wipeouts).toBe(0)
+    standingOn(atash, world)
+    press(world)
+    expect(world.wipeouts).toBe(1)
+    expect(world.events.some((e) => e.type === 'kindle')).toBe(true)
+  })
+})
+
+describe('anars', () => {
+  test('roll from bank to bank and wipe out anything in the way', () => {
+    const world = worldWith([{ kind: 'anar', at: 0.2, period: 4 }])
+    const anar = world.anars[0]
+    const left = anarPosition(anar, 3)
+    const right = anarPosition(anar, 1)
+    expect(Math.hypot(left.x - right.x, left.y - right.y)).toBeCloseTo(280, 0)
+
+    const p = anarPosition(anar, world.clock + STEP)
+    world.x = p.x
+    world.y = p.y
+    world.sampleIndex = indexAt(world.course, 0.2)
+    press(world)
+    expect(world.wipeouts).toBe(1)
+  })
+})
+
 function measureLevel(level: LevelDef) {
   const { samples } = buildCourse(level.path)
   const length = samples.length * 24
@@ -287,68 +388,40 @@ describe('levels', () => {
         expect(gate.hw * 0.76).toBeGreaterThanOrEqual(84)
       }
       // Nothing sits on a respawn point, which would feel like a cheap shot.
-      const lethal = [...world.urchins, ...world.icicles, ...world.whirls]
+      const lethal = [
+        ...world.urchins,
+        ...world.icicles,
+        ...world.whirls,
+        ...world.atashes,
+        ...world.anars,
+        ...world.samovars,
+      ]
       for (const index of [...world.checkpoints, 6]) {
         const s = samples[index]
         for (const hazard of lethal) {
           expect(Math.hypot(hazard.x - s.x, hazard.y - s.y)).toBeGreaterThan(110)
         }
       }
-    })
-  }
-
-  for (const level of LEVELS) {
-    test(`${level.id} keeps its scenery on the bank`, () => {
-      const course = buildCourse(level.path)
-      for (const scenery of level.scenery ?? []) {
-        const { x, y } = bankAt(course, scenery.at, scenery.side, SCENERY_GAP)
-        for (const s of course.samples) {
-          expect(Math.hypot(x - s.x, y - s.y)).toBeGreaterThan(
-            s.hw + SCENERY_RADIUS,
+      // A samovar must not stand on a can, or the can is out of reach.
+      for (const samovar of world.samovars) {
+        for (const can of world.cans) {
+          expect(Math.hypot(samovar.x - can.x, samovar.y - can.y)).toBeGreaterThan(
+            SAMOVAR_RADIUS + CAN_RADIUS + 70,
           )
         }
       }
     })
   }
 
-  for (const level of LEVELS) {
-    test(`${level.id} keeps its scenery lines on the bank`, () => {
-      const course = buildCourse(level.path)
-      for (const { from, to, side } of sceneryRuns(level.scenery ?? [])) {
-        for (const { x, y } of bankLine(course, from, to, side, SCENERY_GAP)) {
-          for (const s of course.samples) {
-            expect(Math.hypot(x - s.x, y - s.y)).toBeGreaterThan(s.hw + 16)
-          }
-        }
-      }
-    })
-  }
-
-  test('every line after The Boiler Room ends at a shelang', () => {
-    const start = LEVELS.findIndex((level) => level.id === 'boiler-room') + 1
-    for (const level of LEVELS.slice(start)) {
-      const scenery = level.scenery ?? []
-      const runs = sceneryRuns(scenery)
-      expect(runs.length).toBe(2)
-      for (const { to, side } of runs) {
-        const last = scenery.find((item) => item.at === to && item.side === side)
-        expect(last?.kind).toBe('shelang')
-      }
-    }
-  })
-
-  test('scenery belongs to the theme of its level', () => {
-    const shared: Scenery['kind'][] = ['shelang', 'dampayi', 'aftabeh']
-    const own: Record<LevelDef['theme'], Scenery['kind'][]> = {
-      tile: ['kashi', 'tas'],
-      brick: ['qanat', 'badgir'],
-      iron: ['manba', 'tolombeh', 'abgarmkon'],
-      frost: ['yakhchal', 'hawz', 'sarv'],
+  test('every level has a Persian obstacle from its own theme', () => {
+    const own: Record<LevelDef['theme'], LevelDef['items'][number]['kind']> = {
+      tile: 'samovar',
+      brick: 'farsh',
+      iron: 'atash',
+      frost: 'anar',
     }
     for (const level of LEVELS) {
-      for (const item of level.scenery ?? []) {
-        expect([...shared, ...own[level.theme]]).toContain(item.kind)
-      }
+      expect(level.items.some((item) => item.kind === own[level.theme])).toBe(true)
     }
   })
 

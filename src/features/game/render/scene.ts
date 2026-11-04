@@ -1,15 +1,32 @@
 import type { Theme } from '../engine/levels'
 import {
+  ANAR_RADIUS,
+  anarPosition,
+  anarRoll,
+  ATASH_RADIUS,
+  ATASH_WARNING,
+  atashCycle,
   CAN_RADIUS,
   finishIndex,
   gateBar,
   ICICLE_RADIUS,
   ICICLE_WARNING,
   icicleLanding,
+  isBurning,
+  isSteaming,
   paddleBar,
+  SAMOVAR_RADIUS,
+  samovarCycle,
   SEATS,
+  STEAM_RADIUS,
+  STEAM_TIME,
+  STEAM_WARNING,
   URCHIN_RADIUS,
   urchinPosition,
+  type Anar,
+  type Atash,
+  type Farsh,
+  type Samovar,
   type World,
 } from '../engine/world'
 import { formatNumber, type Messages } from '../i18n'
@@ -22,7 +39,6 @@ import {
   type StickerId,
 } from '../stickers'
 import type { Effects } from './effects'
-import { drawScenery } from './scenery'
 
 export const BEAN_COLORS = ['#e4572e', '#f2b632', '#2ec4b6', '#a05195']
 /** The bean's outline as an icon, in a box 44 wide centred on the origin. */
@@ -198,6 +214,112 @@ function drawBank(
   }
 }
 
+/** The eight-pointed star of Persian tilework and carpets: two squares, one turned. */
+function traceStar(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.beginPath()
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2
+    const d = i % 2 === 0 ? r : r * 0.72
+    ctx.lineTo(Math.cos(a) * d, Math.sin(a) * d)
+  }
+  ctx.closePath()
+}
+
+/** A carpet laid along the water, with a fringe, a border and a row of medallions. */
+function drawFarsh(
+  ctx: CanvasRenderingContext2D,
+  world: World,
+  farsh: Farsh,
+  bounds: { x0: number; y0: number; x1: number; y1: number },
+) {
+  const { samples } = world.course
+  const first = samples[farsh.from]
+  const last = samples[farsh.to]
+  const reach = Math.hypot(last.x - first.x, last.y - first.y) + 400
+  if (
+    first.x < bounds.x0 - reach ||
+    first.x > bounds.x1 + reach ||
+    first.y < bounds.y0 - reach ||
+    first.y > bounds.y1 + reach
+  ) {
+    return
+  }
+
+  /** A rug shape, `inset` in from the edge of the carpet on every side. */
+  const trace = (inset: number) => {
+    ctx.beginPath()
+    for (let side = -1; side <= 1; side += 2) {
+      const from = side < 0 ? farsh.from : farsh.to
+      const to = side < 0 ? farsh.to : farsh.from
+      const step = side < 0 ? 1 : -1
+      for (let i = from; i !== to + step; i += step) {
+        const s = samples[i]
+        const across = s.hw * (farsh.offset + side * farsh.width) - side * inset
+        // The ends are pulled in too, so the bands stay square at the corners.
+        const along = i === farsh.from ? inset : i === farsh.to ? -inset : 0
+        const x = s.x + s.nx * across + s.tx * along
+        const y = s.y + s.ny * across + s.ty * along
+        ctx.lineTo(x, y)
+      }
+    }
+    ctx.closePath()
+  }
+
+  ctx.lineCap = 'round'
+  ctx.strokeStyle = '#f4e3c1'
+  ctx.lineWidth = 4
+  for (const [index, direction] of [
+    [farsh.from, -1],
+    [farsh.to, 1],
+  ]) {
+    const s = samples[index]
+    const low = s.hw * (farsh.offset - farsh.width)
+    const high = s.hw * (farsh.offset + farsh.width)
+    ctx.beginPath()
+    for (let across = low + 6; across < high; across += 12) {
+      const x = s.x + s.nx * across
+      const y = s.y + s.ny * across
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + s.tx * direction * 14, y + s.ty * direction * 14)
+    }
+    ctx.stroke()
+  }
+
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = 4
+  ctx.strokeStyle = INK
+  ctx.fillStyle = '#1f3a68'
+  trace(0)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#f4e3c1'
+  trace(10)
+  ctx.fill()
+  ctx.fillStyle = '#9b2226'
+  trace(15)
+  ctx.fill()
+
+  for (let i = farsh.from + 2; i < farsh.to - 1; i += 3) {
+    const s = samples[i]
+    const across = s.hw * farsh.offset
+    const size = Math.min(26, s.hw * farsh.width - 20)
+    ctx.save()
+    ctx.translate(s.x + s.nx * across, s.y + s.ny * across)
+    ctx.rotate(Math.atan2(s.ty, s.tx))
+    ctx.fillStyle = '#d8a13a'
+    traceStar(ctx, size)
+    ctx.fill()
+    ctx.fillStyle = '#1f3a68'
+    traceStar(ctx, size * 0.62)
+    ctx.fill()
+    ctx.fillStyle = '#f4e3c1'
+    ctx.beginPath()
+    ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+  }
+}
+
 function drawWater(
   ctx: CanvasRenderingContext2D,
   world: World,
@@ -266,6 +388,8 @@ function drawWater(
       ctx.stroke()
     }
   }
+
+  for (const farsh of world.farshes) drawFarsh(ctx, world, farsh, bounds)
 
   // Currents read as streaks running along the channel.
   for (const current of world.currents) {
@@ -539,6 +663,234 @@ function drawIcicle(
   ctx.restore()
 }
 
+/** A brass urn with a teapot on top. The lid rattles, then the steam comes out. */
+function drawSamovar(
+  ctx: CanvasRenderingContext2D,
+  samovar: Samovar,
+  clock: number,
+) {
+  const cycle = samovarCycle(samovar, clock)
+  const rattling = cycle > samovar.period - STEAM_WARNING
+  ctx.save()
+  ctx.translate(samovar.x, samovar.y)
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'
+  ctx.lineWidth = 3
+  ctx.setLineDash([6, 12])
+  ctx.beginPath()
+  ctx.arc(0, 0, STEAM_RADIUS, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  ctx.lineWidth = 3
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = INK
+  ctx.fillStyle = '#8f6516'
+  ctx.beginPath()
+  ctx.arc(0, 0, SAMOVAR_RADIUS, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#d8a13a'
+  ctx.beginPath()
+  ctx.arc(0, 0, SAMOVAR_RADIUS - 7, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // Side handles and the tap.
+  for (const side of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(side * (SAMOVAR_RADIUS + 3), -2, 7, 0, Math.PI * 2)
+    ctx.fillStyle = '#8f6516'
+    ctx.fill()
+    ctx.stroke()
+  }
+  ctx.fillStyle = '#8f6516'
+  ctx.beginPath()
+  ctx.roundRect(-5, SAMOVAR_RADIUS - 6, 10, 14, 3)
+  ctx.fill()
+  ctx.stroke()
+
+  // Bands of engraving round the belly.
+  ctx.strokeStyle = 'rgba(95,60,12,0.8)'
+  ctx.lineWidth = 2
+  ctx.setLineDash([3, 5])
+  ctx.beginPath()
+  ctx.arc(0, 0, SAMOVAR_RADIUS - 13, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // The little teapot of strong tea sits on top, and jumps about before a burst.
+  const jiggle = rattling ? Math.sin(clock * 50) * 2.5 : 0
+  ctx.translate(jiggle, -jiggle / 2)
+  ctx.strokeStyle = INK
+  ctx.lineWidth = 2.5
+  ctx.fillStyle = '#1f8a9e'
+  ctx.beginPath()
+  ctx.arc(0, 0, 13, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#fff4dc'
+  ctx.beginPath()
+  ctx.arc(0, 0, 5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.translate(-jiggle, jiggle / 2)
+
+  if (isSteaming(samovar, clock)) {
+    const life = cycle / STEAM_TIME
+    ctx.fillStyle = `rgba(255,255,255,${0.75 * (1 - life)})`
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 + clock * 0.6
+      const d = SAMOVAR_RADIUS + life * (STEAM_RADIUS - SAMOVAR_RADIUS - 10)
+      ctx.beginPath()
+      ctx.arc(Math.cos(a) * d, Math.sin(a) * d, 14 + life * 16, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+  ctx.restore()
+}
+
+/** A Chaharshanbe Suri pile of brushwood: sparks give away that it's about to catch. */
+function drawAtash(ctx: CanvasRenderingContext2D, atash: Atash, clock: number) {
+  const burning = isBurning(atash, clock)
+  const untilLit = atash.period - atashCycle(atash, clock)
+  const warned = !burning && untilLit < ATASH_WARNING
+  ctx.save()
+  ctx.translate(atash.x, atash.y)
+
+  ctx.fillStyle = burning
+    ? 'rgba(255,90,20,0.38)'
+    : warned
+      ? 'rgba(255,90,20,0.16)'
+      : 'rgba(30,15,10,0.18)'
+  ctx.strokeStyle = burning ? '#ff5a14' : 'rgba(255,190,110,0.7)'
+  ctx.lineWidth = 3
+  ctx.setLineDash([8, 8])
+  ctx.beginPath()
+  ctx.arc(0, 0, ATASH_RADIUS, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  ctx.lineCap = 'round'
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.3
+    const dx = Math.cos(a) * 25
+    const dy = Math.sin(a) * 25
+    ctx.strokeStyle = INK
+    ctx.lineWidth = 10
+    ctx.beginPath()
+    ctx.moveTo(-dx, -dy)
+    ctx.lineTo(dx, dy)
+    ctx.stroke()
+    ctx.strokeStyle = i % 2 === 0 ? '#7a4a24' : '#5e3618'
+    ctx.lineWidth = 5
+    ctx.stroke()
+  }
+
+  if (burning) {
+    const flicker = 1 + Math.sin(clock * 21 + atash.x) * 0.1
+    for (const [spread, height, color] of [
+      [32, 66, '#e4572e'],
+      [23, 48, '#ff9f1c'],
+      [13, 28, '#ffe08a'],
+    ] as const) {
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.moveTo(-spread, 14)
+      ctx.quadraticCurveTo(-spread * 1.05, -height * 0.4, 0, -height * flicker)
+      ctx.quadraticCurveTo(spread * 1.05, -height * 0.4, spread, 14)
+      ctx.quadraticCurveTo(0, 26, -spread, 14)
+      ctx.fill()
+    }
+  } else if (warned) {
+    ctx.fillStyle = '#ffb347'
+    for (let i = 0; i < 7; i++) {
+      const rise = (clock * 1.6 + i / 7) % 1
+      const x = Math.sin(i * 2.4 + clock * 3) * 24
+      ctx.beginPath()
+      ctx.arc(x, 8 - rise * 56, 3.5 * (1 - rise) + 1, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  } else {
+    ctx.fillStyle = '#ff7a1a'
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath()
+      ctx.arc(-12 + i * 12, (i % 2) * 6 - 3, 3, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+  ctx.restore()
+}
+
+/** A pomegranate for Yalda night, rolling over the groove it has worn across the water. */
+function drawAnar(ctx: CanvasRenderingContext2D, anar: Anar, clock: number) {
+  ctx.strokeStyle = 'rgba(155,34,38,0.4)'
+  ctx.lineWidth = 6
+  ctx.lineCap = 'round'
+  ctx.setLineDash([4, 16])
+  ctx.beginPath()
+  ctx.moveTo(anar.x - anar.nx * anar.travel, anar.y - anar.ny * anar.travel)
+  ctx.lineTo(anar.x + anar.nx * anar.travel, anar.y + anar.ny * anar.travel)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  const { x, y } = anarPosition(anar, clock)
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(anarRoll(anar, clock) / ANAR_RADIUS)
+  ctx.lineWidth = 3
+  ctx.strokeStyle = INK
+  ctx.lineJoin = 'round'
+
+  // The crown goes on first, so that it sits behind the fruit.
+  ctx.fillStyle = '#7a1420'
+  ctx.beginPath()
+  ctx.moveTo(-10, -ANAR_RADIUS + 4)
+  ctx.lineTo(-13, -ANAR_RADIUS - 11)
+  ctx.lineTo(-5, -ANAR_RADIUS - 4)
+  ctx.lineTo(0, -ANAR_RADIUS - 13)
+  ctx.lineTo(5, -ANAR_RADIUS - 4)
+  ctx.lineTo(13, -ANAR_RADIUS - 11)
+  ctx.lineTo(10, -ANAR_RADIUS + 4)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = '#c1121f'
+  ctx.beginPath()
+  ctx.arc(0, 0, ANAR_RADIUS, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  // A split in the skin showing the seeds.
+  ctx.fillStyle = '#fff0d9'
+  ctx.beginPath()
+  ctx.ellipse(6, 7, 15, 12, -0.5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#e5243b'
+  for (const [sx, sy] of [
+    [-1, 4],
+    [7, 1],
+    [14, 3],
+    [1, 12],
+    [9, 9],
+    [14, 12],
+    [7, 16],
+  ]) {
+    ctx.beginPath()
+    ctx.arc(sx, sy, 2.6, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'
+  ctx.beginPath()
+  ctx.ellipse(-13, -13, 7, 4, -0.7, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
 const stickerPaths = new Map<string, Path2D>()
 
 function stickerPath(d: string) {
@@ -790,9 +1142,6 @@ export function drawScene(
   ctx.lineWidth = 16
   ctx.stroke()
 
-  // Under the hazards, so that scenery can never hide one.
-  drawScenery(ctx, world.course, world.level, world.clock, visible)
-
   for (const whirl of world.whirls) {
     if (visible(whirl.x, whirl.y))
       drawWhirl(ctx, whirl.x, whirl.y, whirl.radius, world.clock)
@@ -820,6 +1169,15 @@ export function drawScene(
     ctx.beginPath()
     ctx.arc(paddle.x, paddle.y, 16, 0, Math.PI * 2)
     ctx.fill()
+  }
+  for (const atash of world.atashes) {
+    if (visible(atash.x, atash.y)) drawAtash(ctx, atash, world.clock)
+  }
+  for (const samovar of world.samovars) {
+    if (visible(samovar.x, samovar.y, 300)) drawSamovar(ctx, samovar, world.clock)
+  }
+  for (const anar of world.anars) {
+    if (visible(anar.x, anar.y, 300)) drawAnar(ctx, anar, world.clock)
   }
 
   drawTub(ctx, world, fx, options.stickers)

@@ -155,6 +155,16 @@ export function applyEvent(
       addWord(fx, event.x, event.y - 50, words.skid, '#d6f0fb', 28)
       burst(fx, event.x, event.y, 10, ICE_COLORS)
       break
+    case 'soak':
+      addWord(fx, event.x, event.y - 50, words.soak, '#f4e3c1', 28)
+      burst(fx, event.x, event.y, 10, ['#9b2226', '#f4e3c1', '#ffffff'])
+      break
+    case 'steam':
+      burst(fx, event.x, event.y, 14, ['#ffffff', '#e8f4f4'])
+      break
+    case 'kindle':
+      burst(fx, event.x, event.y, 14, FIRE_COLORS)
+      break
     case 'respawn':
       fx.shake = 14
       addWord(fx, event.x, event.y - 30, words.respawn, '#ff6b6b', 40)

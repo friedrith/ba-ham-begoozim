@@ -16,7 +16,7 @@ export const KICK_GAS = 0.1
 const HOLD_GAS = 0.32
 const REGEN_GAS = 0.2
 const CAN_GAS = 0.4
-const ICICLE_EARSHOT = 800
+const EARSHOT = 800
 
 const SYNC_WINDOW = 0.14
 const HARMONY_KICK = 1.5
@@ -29,11 +29,31 @@ const ICE_FORWARD_DRAG = 0.25
 const ICE_LATERAL_DRAG = 0.5
 const ICE_ANGULAR_DRAG = 1.5
 
+/** A soaked carpet is the opposite of ice: it grips the hull and won't let go. */
+const FARSH_FORWARD_DRAG = 3
+const FARSH_LATERAL_DRAG = 5
+const FARSH_ANGULAR_DRAG = 3.5
+
 export const CAN_RADIUS = 16
 export const URCHIN_RADIUS = 22
 export const ICICLE_RADIUS = 46
 /** Seconds of shadow on the water before an icicle lands. */
 export const ICICLE_WARNING = 1.3
+export const SAMOVAR_RADIUS = 34
+export const STEAM_RADIUS = 150
+/** Seconds each burst of steam lasts. */
+export const STEAM_TIME = 1
+/** Seconds the lid rattles before the steam comes. */
+export const STEAM_WARNING = 0.8
+const STEAM_PUSH = 380
+export const ATASH_RADIUS = 40
+/** The share of its period that a bonfire spends burning. */
+const ATASH_BURN = 0.45
+/** Seconds of sparks before a bonfire catches. */
+export const ATASH_WARNING = 0.9
+export const ANAR_RADIUS = 30
+/** How far an anar rolls either side of the middle, as a share of the half-width. */
+const ANAR_TRAVEL = 0.7
 const SWALLOW_RADIUS = 18
 const HULL_RADIUS = 32
 const HULL_OFFSETS = [-30, 0, 30]
@@ -76,6 +96,9 @@ export type GameEvent =
   | { type: 'creak' }
   | { type: 'smash'; x: number; y: number }
   | { type: 'skid'; x: number; y: number }
+  | { type: 'soak'; x: number; y: number }
+  | { type: 'steam'; x: number; y: number }
+  | { type: 'kindle'; x: number; y: number }
 
 export type Can = { x: number; y: number; taken: boolean }
 export type Urchin = { x: number; y: number; orbit: number; speed: number }
@@ -102,6 +125,18 @@ export type Icicle = {
   warned: number
 }
 export type IceSheet = { from: number; to: number }
+export type Samovar = { x: number; y: number; period: number; phase: number }
+export type Farsh = { from: number; to: number; offset: number; width: number }
+export type Atash = { x: number; y: number; period: number; phase: number }
+export type Anar = {
+  x: number
+  y: number
+  nx: number
+  ny: number
+  travel: number
+  period: number
+  phase: number
+}
 
 export type World = {
   level: LevelDef
@@ -116,7 +151,12 @@ export type World = {
   flames: Flame[]
   icicles: Icicle[]
   ice: IceSheet[]
+  samovars: Samovar[]
+  farshes: Farsh[]
+  atashes: Atash[]
+  anars: Anar[]
   onIce: boolean
+  onFarsh: boolean
   x: number
   y: number
   vx: number
@@ -160,7 +200,12 @@ export function createWorld(level: LevelDef): World {
     flames: [],
     icicles: [],
     ice: [],
+    samovars: [],
+    farshes: [],
+    atashes: [],
+    anars: [],
     onIce: false,
+    onFarsh: false,
     x: 0,
     y: 0,
     vx: 0,
@@ -218,8 +263,36 @@ export function createWorld(level: LevelDef): World {
       })
       continue
     }
+    if (item.kind === 'farsh') {
+      world.farshes.push({
+        from: indexAt(course, item.from),
+        to: indexAt(course, item.to),
+        offset: item.offset,
+        width: item.width,
+      })
+      continue
+    }
+    if (item.kind === 'anar') {
+      const s = course.samples[indexAt(course, item.at)]
+      world.anars.push({
+        x: s.x,
+        y: s.y,
+        nx: s.nx,
+        ny: s.ny,
+        travel: s.hw * ANAR_TRAVEL,
+        period: item.period,
+        phase: item.phase ?? 0,
+      })
+      continue
+    }
     const { x, y } = pointAt(course, item.at, item.offset ?? 0)
     if (item.kind === 'can') world.cans.push({ x, y, taken: false })
+    if (item.kind === 'samovar') {
+      world.samovars.push({ x, y, period: item.period, phase: item.phase ?? 0 })
+    }
+    if (item.kind === 'atash') {
+      world.atashes.push({ x, y, period: item.period, phase: item.phase ?? 0 })
+    }
     if (item.kind === 'urchin') {
       world.urchins.push({ x, y, orbit: item.orbit ?? 0, speed: item.speed ?? 0 })
     }
@@ -312,6 +385,43 @@ export function paddleBar(paddle: Paddle, clock: number) {
 export function icicleLanding(icicle: Icicle, clock: number) {
   const elapsed = (clock + icicle.phase) % icicle.period
   return icicle.period - elapsed
+}
+
+/** Seconds into a samovar's cycle, which opens with its burst of steam. */
+export function samovarCycle(samovar: Samovar, clock: number) {
+  return (clock + samovar.phase) % samovar.period
+}
+
+export function isSteaming(samovar: Samovar, clock: number) {
+  return samovarCycle(samovar, clock) < STEAM_TIME
+}
+
+/** Seconds into a bonfire's cycle, which opens with it burning. */
+export function atashCycle(atash: Atash, clock: number) {
+  return (clock + atash.phase) % atash.period
+}
+
+export function isBurning(atash: Atash, clock: number) {
+  return atashCycle(atash, clock) < atash.period * ATASH_BURN
+}
+
+/** How far across the channel an anar has rolled. */
+export function anarRoll(anar: Anar, clock: number) {
+  return Math.sin((clock * Math.PI * 2) / anar.period + anar.phase) * anar.travel
+}
+
+export function anarPosition(anar: Anar, clock: number) {
+  const roll = anarRoll(anar, clock)
+  return { x: anar.x + anar.nx * roll, y: anar.y + anar.ny * roll }
+}
+
+/** `across` is a distance from the centreline, as a share of the half-width. */
+export function farshCovers(farsh: Farsh, index: number, across: number) {
+  return (
+    index >= farsh.from &&
+    index <= farsh.to &&
+    Math.abs(across - farsh.offset) <= farsh.width
+  )
 }
 
 function push(world: World, seatIndex: number, amount: number) {
@@ -409,16 +519,41 @@ function applyWater(world: World, dt: number) {
   }
   world.onIce = onIce
 
+  const s = world.course.samples[world.sampleIndex]
+  const across = ((world.x - s.x) * s.nx + (world.y - s.y) * s.ny) / s.hw
+  const onFarsh = world.farshes.some((farsh) =>
+    farshCovers(farsh, world.sampleIndex, across),
+  )
+  if (onFarsh && !world.onFarsh) {
+    world.events.push({ type: 'soak', x: world.x, y: world.y })
+  }
+  world.onFarsh = onFarsh
+
+  const [forwardDrag, lateralDrag, angularDrag] = onIce
+    ? [ICE_FORWARD_DRAG, ICE_LATERAL_DRAG, ICE_ANGULAR_DRAG]
+    : onFarsh
+      ? [FARSH_FORWARD_DRAG, FARSH_LATERAL_DRAG, FARSH_ANGULAR_DRAG]
+      : [FORWARD_DRAG, LATERAL_DRAG, ANGULAR_DRAG]
   const f = forwardOf(world.angle)
   const along = world.vx * f.x + world.vy * f.y
   const side = -world.vx * f.y + world.vy * f.x
-  const newAlong = along * Math.exp(-(onIce ? ICE_FORWARD_DRAG : FORWARD_DRAG) * dt)
-  const newSide = side * Math.exp(-(onIce ? ICE_LATERAL_DRAG : LATERAL_DRAG) * dt)
+  const newAlong = along * Math.exp(-forwardDrag * dt)
+  const newSide = side * Math.exp(-lateralDrag * dt)
   world.vx = f.x * newAlong - f.y * newSide
   world.vy = f.y * newAlong + f.x * newSide
-  world.spin *= Math.exp(-(onIce ? ICE_ANGULAR_DRAG : ANGULAR_DRAG) * dt)
+  world.spin *= Math.exp(-angularDrag * dt)
 
-  const s = world.course.samples[world.sampleIndex]
+  for (const samovar of world.samovars) {
+    if (!isSteaming(samovar, world.clock)) continue
+    const dx = world.x - samovar.x
+    const dy = world.y - samovar.y
+    const d = Math.hypot(dx, dy)
+    if (d > STEAM_RADIUS || d === 0) continue
+    const force = STEAM_PUSH * (1 - d / STEAM_RADIUS)
+    world.vx += (dx / d) * force * dt
+    world.vy += (dy / d) * force * dt
+  }
+
   for (const current of world.currents) {
     if (world.sampleIndex >= current.from && world.sampleIndex <= current.to) {
       world.vx += s.tx * current.strength * dt
@@ -444,6 +579,8 @@ type Surface = {
   cx?: number
   cy?: number
   omega?: number
+  /** How thick the surface is around its line, for a post rather than a wall. */
+  radius?: number
 }
 
 function collideSegment(
@@ -464,18 +601,21 @@ function collideSegment(
       0,
       Math.min(1, ((c.x - ax) * abx + (c.y - ay) * aby) / lengthSq),
     )
-    const px = ax + abx * t
-    const py = ay + aby * t
-    const dx = c.x - px
-    const dy = c.y - py
+    const lineX = ax + abx * t
+    const lineY = ay + aby * t
+    const dx = c.x - lineX
+    const dy = c.y - lineY
     const d = Math.hypot(dx, dy)
-    if (d >= HULL_RADIUS || d === 0) continue
+    const radius = surface.radius ?? 0
+    if (d >= HULL_RADIUS + radius || d === 0) continue
 
     const nx = dx / d
     const ny = dy / d
-    world.x += nx * (HULL_RADIUS - d)
-    world.y += ny * (HULL_RADIUS - d)
+    world.x += nx * (HULL_RADIUS + radius - d)
+    world.y += ny * (HULL_RADIUS + radius - d)
 
+    const px = lineX + nx * radius
+    const py = lineY + ny * radius
     const rx = px - world.x
     const ry = py - world.y
     const omega = surface.omega ?? 0
@@ -536,6 +676,12 @@ function collideHazards(world: World) {
       omega: paddle.speed,
     })
   }
+  for (const samovar of world.samovars) {
+    if (Math.hypot(samovar.x - world.x, samovar.y - world.y) > 200) continue
+    collideSegment(world, samovar.x, samovar.y, samovar.x, samovar.y, {
+      radius: SAMOVAR_RADIUS,
+    })
+  }
   if (world.grace > 0) return
   for (const urchin of world.urchins) {
     const p = urchinPosition(urchin, world.clock)
@@ -545,6 +691,44 @@ function collideHazards(world: World) {
         wipeout(world)
         return
       }
+    }
+  }
+  for (const anar of world.anars) {
+    const p = anarPosition(anar, world.clock)
+    if (hullWithin(world, p.x, p.y, HULL_RADIUS + ANAR_RADIUS - 6)) {
+      wipeout(world)
+      return
+    }
+  }
+  for (const atash of world.atashes) {
+    if (!isBurning(atash, world.clock)) continue
+    if (hullWithin(world, atash.x, atash.y, HULL_RADIUS + ATASH_RADIUS - 6)) {
+      wipeout(world)
+      return
+    }
+  }
+}
+
+/** Their timing only depends on the clock, so a change since last step is the moment. */
+function announceCycles(world: World, dt: number) {
+  const near = (p: { x: number; y: number }) =>
+    Math.hypot(p.x - world.x, p.y - world.y) < EARSHOT
+  for (const samovar of world.samovars) {
+    if (
+      near(samovar) &&
+      isSteaming(samovar, world.clock) &&
+      !isSteaming(samovar, world.clock - dt)
+    ) {
+      world.events.push({ type: 'steam', x: samovar.x, y: samovar.y })
+    }
+  }
+  for (const atash of world.atashes) {
+    if (
+      near(atash) &&
+      isBurning(atash, world.clock) &&
+      !isBurning(atash, world.clock - dt)
+    ) {
+      world.events.push({ type: 'kindle', x: atash.x, y: atash.y })
     }
   }
 }
@@ -560,7 +744,7 @@ function updateIcicles(world: World) {
   for (const icicle of world.icicles) {
     const drop = Math.floor((world.clock + icicle.phase) / icicle.period)
     // Only icicles close enough to see make a sound or a splash.
-    const near = Math.hypot(icicle.x - world.x, icicle.y - world.y) < ICICLE_EARSHOT
+    const near = Math.hypot(icicle.x - world.x, icicle.y - world.y) < EARSHOT
     if (
       icicleLanding(icicle, world.clock) < ICICLE_WARNING &&
       icicle.warned <= drop
@@ -676,6 +860,7 @@ export function stepWorld(
 
   collideWalls(world)
   collideHazards(world)
+  announceCycles(world, dt)
   updateIcicles(world)
   collectCans(world)
   updateProgress(world)

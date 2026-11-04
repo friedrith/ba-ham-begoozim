@@ -19,10 +19,16 @@ const FIELDS = {
   paddles: 'fixed',
   currents: 'fixed',
   ice: 'fixed',
+  // Everything about these follows from the clock, which travels already.
+  samovars: 'fixed',
+  farshes: 'fixed',
+  atashes: 'fixed',
+  anars: 'fixed',
   cans: 'custom',
   flames: 'custom',
   icicles: 'custom',
   onIce: 'custom',
+  onFarsh: 'custom',
   seats: 'custom',
   status: 'custom',
   // Events travel beside the snapshot, because each one must arrive exactly once.
@@ -58,7 +64,7 @@ const NUMBERS = (Object.keys(FIELDS) as (keyof typeof FIELDS)[]).filter(
 const STATUSES: readonly World['status'][] = ['countdown', 'racing', 'finished']
 
 /** Changes when the shape of a snapshot does, so old clients can be told to refresh. */
-export const SNAPSHOT_LAYOUT = `${NUMBERS.join()};onIce;seats:5;cans:1;flames:1;icicles:2`
+export const SNAPSHOT_LAYOUT = `${NUMBERS.join()};onIce;onFarsh;seats:5;cans:1;flames:1;icicles:2`
 
 /** A world's changing state as a flat list: about a third smaller than named fields. */
 export type Snapshot = number[]
@@ -66,7 +72,11 @@ export type Snapshot = number[]
 const round = (value: number) => Math.round(value * 1000) / 1000
 
 export function encodeSnapshot(world: World): Snapshot {
-  const snapshot = [STATUSES.indexOf(world.status), world.onIce ? 1 : 0]
+  const snapshot = [
+    STATUSES.indexOf(world.status),
+    world.onIce ? 1 : 0,
+    world.onFarsh ? 1 : 0,
+  ]
   for (const field of NUMBERS) snapshot.push(round(world[field]))
   for (const seat of world.seats) {
     snapshot.push(
@@ -89,6 +99,7 @@ export function applySnapshot(world: World, snapshot: Snapshot) {
   const read = () => snapshot[next++]
   world.status = STATUSES[read()]
   world.onIce = read() === 1
+  world.onFarsh = read() === 1
   for (const field of NUMBERS) world[field] = read()
   for (const seat of world.seats) {
     seat.gas = read()

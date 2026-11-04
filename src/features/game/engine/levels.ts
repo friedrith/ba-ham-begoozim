@@ -12,51 +12,17 @@ export type LevelItem =
   | { kind: 'flame'; at: number; offset?: number }
   | { kind: 'icicle'; at: number; offset?: number; period: number; phase?: number }
   | { kind: 'ice'; from: number; to: number }
-
-/**
- * Set dressing on the banks. It's only drawn, so it never affects the game.
- *
- * Each theme is a different part of how water gets to a Persian bath, and the pieces
- * on a bank are joined by one line that ends at a shelang dripping into the channel:
- * - tile, the hammam: kashi, tas, aftabeh, dampayi, joined by a hose
- * - brick, the qanat: qanat, badgir, aftabeh, dampayi, joined by clay pipe
- * - iron, the motorkhaneh: manba, tolombeh, abgarmkon, dampayi, joined by copper pipe
- * - frost, the winter yard: yakhchal, hawz, sarv, aftabeh, joined by a frozen hose
- */
-export type Scenery = {
-  kind:
-    | 'shelang'
-    | 'aftabeh'
-    | 'dampayi'
-    | 'kashi'
-    | 'tas'
-    | 'qanat'
-    | 'badgir'
-    | 'manba'
-    | 'tolombeh'
-    | 'abgarmkon'
-    | 'yakhchal'
-    | 'hawz'
-    | 'sarv'
-  at: number
-  /** -1 left bank, 1 right bank. */
-  side: -1 | 1
-}
-
-/** How far beyond the wall scenery sits, measured to its centre. */
-export const SCENERY_GAP = 105
-/** The circle that any piece of scenery fits in, which has to stay clear of the water. */
-export const SCENERY_RADIUS = 90
-
-/** The stretch of each bank that its line runs along, from first piece to last. */
-export function sceneryRuns(scenery: readonly Scenery[]) {
-  return ([-1, 1] as const).flatMap((side) => {
-    const ats = scenery.filter((item) => item.side === side).map((item) => item.at)
-    return ats.length > 1
-      ? [{ side, from: Math.min(...ats), to: Math.max(...ats) }]
-      : []
-  })
-}
+  /** A brass urn: solid, and every `period` seconds its steam shoves the tub away. */
+  | { kind: 'samovar'; at: number; offset?: number; period: number; phase?: number }
+  /**
+   * A soaked carpet floating in the channel, which drags like mud. `offset` is where its
+   * middle sits and `width` how far it reaches either side, as fractions of the half-width.
+   */
+  | { kind: 'farsh'; from: number; to: number; offset: number; width: number }
+  /** A Chaharshanbe Suri bonfire: harmless while it smoulders, lethal while it burns. */
+  | { kind: 'atash'; at: number; offset?: number; period: number; phase?: number }
+  /** A Yalda pomegranate, rolling from bank to bank and back. Lethal. */
+  | { kind: 'anar'; at: number; period: number; phase?: number }
 
 export type LevelDef = {
   /** Also the key for this level's name, blurb and hint in `i18n/en.ts` and `i18n/fa.ts`. */
@@ -67,7 +33,6 @@ export type LevelDef = {
   path: readonly ControlPoint[]
   /** Fractions along the course where the tub respawns after a wipeout. */
   checkpoints: readonly number[]
-  scenery?: readonly Scenery[]
   items: readonly LevelItem[]
 }
 
@@ -96,10 +61,12 @@ export const LEVELS: readonly LevelDef[] = [
     items: [
       { kind: 'can', at: 0.07 },
       { kind: 'can', at: 0.14, offset: 0.5 },
+      { kind: 'samovar', at: 0.19, offset: -0.45, period: 5 },
       { kind: 'can', at: 0.24, offset: -0.5 },
       { kind: 'can', at: 0.38, offset: 0.55 },
       { kind: 'can', at: 0.5, offset: -0.55 },
       { kind: 'can', at: 0.62 },
+      { kind: 'samovar', at: 0.71, offset: 0.5, period: 5, phase: 2 },
       { kind: 'can', at: 0.76, offset: 0.55 },
       { kind: 'can', at: 0.9, offset: -0.5 },
       { kind: 'current', from: 0.44, to: 0.56, strength: 70 },
@@ -110,7 +77,7 @@ export const LEVELS: readonly LevelDef[] = [
   {
     id: 'storm-drain',
     theme: 'brick',
-    par: 75,
+    par: 85,
     path: [
       [0, 0, 190],
       [0, -450, 180],
@@ -133,11 +100,13 @@ export const LEVELS: readonly LevelDef[] = [
     items: [
       { kind: 'can', at: 0.06, offset: -0.5 },
       { kind: 'gate', at: 0.13, period: 5 },
+      { kind: 'farsh', from: 0.16, to: 0.21, offset: -0.5, width: 0.5 },
       { kind: 'can', at: 0.2, offset: 0.5 },
       { kind: 'current', from: 0.28, to: 0.4, strength: -90 },
       { kind: 'can', at: 0.34, offset: -0.6 },
       { kind: 'paddle', at: 0.44, length: 105, speed: 1.1 },
       { kind: 'can', at: 0.47, offset: 0.6 },
+      { kind: 'farsh', from: 0.49, to: 0.54, offset: 0.5, width: 0.5 },
       { kind: 'gate', at: 0.57, period: 4.4, phase: 1.5 },
       { kind: 'urchin', at: 0.63, offset: 0.5, orbit: 45, speed: 1.4 },
       { kind: 'can', at: 0.66, offset: -0.55 },
@@ -150,7 +119,7 @@ export const LEVELS: readonly LevelDef[] = [
   {
     id: 'boiler-room',
     theme: 'iron',
-    par: 50,
+    par: 58,
     path: [
       [0, 0, 180],
       [250, -450, 170],
@@ -176,6 +145,8 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'can', at: 0.09, offset: 0.5 },
       { kind: 'whirl', at: 0.15, offset: -0.6, radius: 130, pull: 150 },
       { kind: 'can', at: 0.19, offset: 0.6 },
+      { kind: 'atash', at: 0.22, offset: -0.55, period: 5 },
+      { kind: 'atash', at: 0.22, offset: 0.55, period: 5, phase: 2.5 },
       { kind: 'gate', at: 0.31, period: 4.6 },
       { kind: 'flame', at: 0.36, offset: -0.3 },
       { kind: 'urchin', at: 0.41, offset: 0.4, orbit: 50, speed: -1.6 },
@@ -183,6 +154,9 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'whirl', at: 0.56, offset: 0.6, radius: 130, pull: 170 },
       { kind: 'can', at: 0.6, offset: -0.6 },
       { kind: 'paddle', at: 0.68, length: 100, speed: 1.5 },
+      { kind: 'atash', at: 0.72, offset: -0.6, period: 4.5 },
+      { kind: 'atash', at: 0.72, period: 4.5, phase: 1.5 },
+      { kind: 'atash', at: 0.72, offset: 0.6, period: 4.5, phase: 3 },
       { kind: 'current', from: 0.77, to: 0.85, strength: -80 },
       { kind: 'flame', at: 0.8, offset: 0.3 },
       { kind: 'can', at: 0.83, offset: -0.55 },
@@ -213,30 +187,20 @@ export const LEVELS: readonly LevelDef[] = [
       [120, -4800, 170],
     ],
     checkpoints: [0.34, 0.68],
-    scenery: [
-      { kind: 'kashi', at: 0.06, side: 1 },
-      { kind: 'kashi', at: 0.15, side: -1 },
-      { kind: 'tas', at: 0.24, side: 1 },
-      { kind: 'dampayi', at: 0.33, side: -1 },
-      { kind: 'aftabeh', at: 0.42, side: 1 },
-      { kind: 'tas', at: 0.51, side: -1 },
-      { kind: 'dampayi', at: 0.6, side: 1 },
-      { kind: 'aftabeh', at: 0.69, side: -1 },
-      { kind: 'shelang', at: 0.78, side: 1 },
-      { kind: 'shelang', at: 0.87, side: -1 },
-    ],
     items: [
       { kind: 'can', at: 0.07, offset: 0.5 },
       { kind: 'urchin', at: 0.13, offset: 0.65 },
       { kind: 'can', at: 0.18, offset: 0.55 },
       { kind: 'urchin', at: 0.25, offset: -0.65 },
       { kind: 'can', at: 0.29, offset: -0.55 },
+      { kind: 'samovar', at: 0.295, offset: 0.55, period: 4.5 },
       { kind: 'urchin', at: 0.39, offset: -0.65 },
       { kind: 'urchin', at: 0.46, offset: 0.65 },
       { kind: 'can', at: 0.5, offset: -0.55 },
       { kind: 'urchin', at: 0.56, offset: -0.65 },
       { kind: 'can', at: 0.6, offset: 0.55 },
       { kind: 'urchin', at: 0.63, offset: 0.65 },
+      { kind: 'samovar', at: 0.71, offset: 0.55, period: 4.5, phase: 2 },
       { kind: 'urchin', at: 0.74, offset: -0.65 },
       { kind: 'can', at: 0.78, offset: 0.55 },
       { kind: 'urchin', at: 0.86, offset: -0.65 },
@@ -267,18 +231,6 @@ export const LEVELS: readonly LevelDef[] = [
       [1060, -5600, 185],
     ],
     checkpoints: [0.26, 0.5, 0.75],
-    scenery: [
-      { kind: 'qanat', at: 0.06, side: -1 },
-      { kind: 'badgir', at: 0.15, side: 1 },
-      { kind: 'badgir', at: 0.24, side: -1 },
-      { kind: 'qanat', at: 0.33, side: 1 },
-      { kind: 'aftabeh', at: 0.42, side: -1 },
-      { kind: 'dampayi', at: 0.51, side: 1 },
-      { kind: 'qanat', at: 0.6, side: -1 },
-      { kind: 'badgir', at: 0.69, side: 1 },
-      { kind: 'shelang', at: 0.78, side: -1 },
-      { kind: 'shelang', at: 0.87, side: 1 },
-    ],
     items: [
       { kind: 'whirl', at: 0.09, offset: 0.75, radius: 120, pull: 190 },
       { kind: 'can', at: 0.1, offset: -0.6 },
@@ -290,12 +242,14 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'urchin', at: 0.37, offset: 0.1, orbit: 40, speed: 1.5 },
       { kind: 'can', at: 0.4, offset: 0.6 },
       { kind: 'whirl', at: 0.44, offset: -0.7, radius: 125, pull: 210 },
+      { kind: 'farsh', from: 0.48, to: 0.52, offset: -0.5, width: 0.5 },
       { kind: 'current', from: 0.54, to: 0.66, strength: -110 },
       { kind: 'whirl', at: 0.57, offset: 0.7, radius: 125, pull: 210 },
       { kind: 'whirl', at: 0.57, offset: -0.7, radius: 125, pull: 210 },
       { kind: 'can', at: 0.62, offset: 0.55 },
       { kind: 'urchin', at: 0.65, offset: -0.35 },
       { kind: 'gate', at: 0.71, period: 4 },
+      { kind: 'farsh', from: 0.73, to: 0.78, offset: -0.55, width: 0.45 },
       { kind: 'can', at: 0.74, offset: 0.55 },
       { kind: 'whirl', at: 0.8, offset: 0.7, radius: 130, pull: 220 },
       { kind: 'whirl', at: 0.86, offset: -0.7, radius: 130, pull: 220 },
@@ -306,7 +260,7 @@ export const LEVELS: readonly LevelDef[] = [
   {
     id: 'sewer-slalom',
     theme: 'brick',
-    par: 50,
+    par: 54,
     path: [
       [0, 0, 180],
       [0, -500, 140],
@@ -326,18 +280,6 @@ export const LEVELS: readonly LevelDef[] = [
       [800, -5700, 180],
     ],
     checkpoints: [0.27, 0.52, 0.76],
-    scenery: [
-      { kind: 'badgir', at: 0.06, side: 1 },
-      { kind: 'qanat', at: 0.15, side: -1 },
-      { kind: 'qanat', at: 0.24, side: 1 },
-      { kind: 'aftabeh', at: 0.33, side: -1 },
-      { kind: 'dampayi', at: 0.42, side: 1 },
-      { kind: 'badgir', at: 0.51, side: -1 },
-      { kind: 'badgir', at: 0.6, side: 1 },
-      { kind: 'qanat', at: 0.69, side: -1 },
-      { kind: 'shelang', at: 0.78, side: 1 },
-      { kind: 'shelang', at: 0.87, side: -1 },
-    ],
     items: [
       { kind: 'urchin', at: 0.08, offset: 0.6 },
       { kind: 'can', at: 0.1, offset: -0.55 },
@@ -349,6 +291,7 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'urchin', at: 0.31, offset: 0.6, orbit: 15, speed: 1.6 },
       { kind: 'can', at: 0.34, offset: 0.55 },
       { kind: 'urchin', at: 0.37, offset: -0.6, orbit: 15, speed: -1.6 },
+      { kind: 'farsh', from: 0.4, to: 0.44, offset: 0.5, width: 0.5 },
       { kind: 'gate', at: 0.47, period: 4.2 },
       { kind: 'urchin', at: 0.56, offset: 0.6 },
       { kind: 'urchin', at: 0.615, offset: -0.6, orbit: 15, speed: 1.8 },
@@ -360,6 +303,7 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'can', at: 0.85, offset: 0.55 },
       { kind: 'urchin', at: 0.87, offset: -0.6 },
       { kind: 'urchin', at: 0.92, offset: 0.6 },
+      { kind: 'farsh', from: 0.94, to: 0.97, offset: -0.5, width: 0.5 },
     ],
   },
   {
@@ -387,18 +331,6 @@ export const LEVELS: readonly LevelDef[] = [
       [160, -5440, 170],
     ],
     checkpoints: [0.27, 0.54, 0.79],
-    scenery: [
-      { kind: 'manba', at: 0.06, side: -1 },
-      { kind: 'abgarmkon', at: 0.15, side: 1 },
-      { kind: 'tolombeh', at: 0.24, side: -1 },
-      { kind: 'manba', at: 0.33, side: 1 },
-      { kind: 'abgarmkon', at: 0.42, side: -1 },
-      { kind: 'tolombeh', at: 0.51, side: 1 },
-      { kind: 'dampayi', at: 0.6, side: -1 },
-      { kind: 'abgarmkon', at: 0.69, side: 1 },
-      { kind: 'shelang', at: 0.78, side: -1 },
-      { kind: 'shelang', at: 0.87, side: 1 },
-    ],
     items: [
       { kind: 'flame', at: 0.04, offset: 0.2 },
       { kind: 'can', at: 0.08, offset: 0.5 },
@@ -406,6 +338,8 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'current', from: 0.14, to: 0.22, strength: -120 },
       { kind: 'flame', at: 0.15, offset: -0.4 },
       { kind: 'can', at: 0.19, offset: 0.5 },
+      { kind: 'atash', at: 0.24, offset: -0.5, period: 5 },
+      { kind: 'atash', at: 0.24, offset: 0.5, period: 5, phase: 2.5 },
       { kind: 'urchin', at: 0.33, offset: 0.55, orbit: 15, speed: -2.2 },
       { kind: 'flame', at: 0.37, offset: 0.4 },
       { kind: 'gate', at: 0.43, period: 3.6 },
@@ -416,6 +350,8 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'urchin', at: 0.64, offset: 0.65 },
       { kind: 'can', at: 0.66, offset: -0.5 },
       { kind: 'flame', at: 0.7, offset: 0.4 },
+      { kind: 'atash', at: 0.73, offset: -0.5, period: 4.4 },
+      { kind: 'atash', at: 0.73, offset: 0.5, period: 4.4, phase: 2.2 },
       { kind: 'paddle', at: 0.76, length: 75, speed: 1.9 },
       { kind: 'can', at: 0.83, offset: 0.5 },
       { kind: 'gate', at: 0.84, period: 3.2 },
@@ -448,18 +384,6 @@ export const LEVELS: readonly LevelDef[] = [
       [820, -5500, 175],
     ],
     checkpoints: [0.24, 0.52, 0.81],
-    scenery: [
-      { kind: 'abgarmkon', at: 0.06, side: 1 },
-      { kind: 'manba', at: 0.15, side: -1 },
-      { kind: 'tolombeh', at: 0.24, side: 1 },
-      { kind: 'abgarmkon', at: 0.33, side: -1 },
-      { kind: 'manba', at: 0.42, side: 1 },
-      { kind: 'dampayi', at: 0.51, side: -1 },
-      { kind: 'abgarmkon', at: 0.6, side: 1 },
-      { kind: 'tolombeh', at: 0.69, side: -1 },
-      { kind: 'shelang', at: 0.78, side: 1 },
-      { kind: 'shelang', at: 0.87, side: -1 },
-    ],
     items: [
       { kind: 'flame', at: 0.05 },
       { kind: 'can', at: 0.09, offset: -0.5 },
@@ -473,9 +397,11 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'flame', at: 0.44, offset: -0.3 },
       { kind: 'gate', at: 0.49, period: 3.4 },
       { kind: 'urchin', at: 0.56, offset: 0.4, orbit: 35, speed: 1.8 },
+      { kind: 'atash', at: 0.58, offset: -0.55, period: 4.4 },
       { kind: 'gate', at: 0.62, period: 3.4, phase: 2 },
       { kind: 'urchin', at: 0.67, offset: -0.6 },
       { kind: 'current', from: 0.69, to: 0.79, strength: -100 },
+      { kind: 'atash', at: 0.72, offset: -0.5, period: 4, phase: 1 },
       { kind: 'can', at: 0.74, offset: 0.55 },
       { kind: 'paddle', at: 0.77, offset: -0.15, length: 85, speed: -1.7 },
       { kind: 'urchin', at: 0.86, offset: -0.6 },
@@ -506,18 +432,6 @@ export const LEVELS: readonly LevelDef[] = [
       [1260, -5360, 190],
     ],
     checkpoints: [0.34, 0.67],
-    scenery: [
-      { kind: 'yakhchal', at: 0.06, side: -1 },
-      { kind: 'sarv', at: 0.15, side: 1 },
-      { kind: 'sarv', at: 0.24, side: -1 },
-      { kind: 'hawz', at: 0.33, side: 1 },
-      { kind: 'hawz', at: 0.42, side: -1 },
-      { kind: 'yakhchal', at: 0.51, side: 1 },
-      { kind: 'aftabeh', at: 0.6, side: -1 },
-      { kind: 'sarv', at: 0.69, side: 1 },
-      { kind: 'shelang', at: 0.78, side: -1 },
-      { kind: 'shelang', at: 0.87, side: 1 },
-    ],
     items: [
       { kind: 'can', at: 0.06, offset: 0.5 },
       { kind: 'icicle', at: 0.11, period: 4.4 },
@@ -525,6 +439,7 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'icicle', at: 0.21, offset: -0.4, period: 4.5 },
       { kind: 'icicle', at: 0.26, offset: 0.4, period: 4.5, phase: 2.25 },
       { kind: 'can', at: 0.3 },
+      { kind: 'anar', at: 0.365, period: 5 },
       { kind: 'icicle', at: 0.41, offset: -0.55, period: 4 },
       { kind: 'icicle', at: 0.41, offset: 0.05, period: 4, phase: 1.3 },
       { kind: 'icicle', at: 0.41, offset: 0.6, period: 4, phase: 2.6 },
@@ -533,6 +448,7 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'icicle', at: 0.57, offset: 0.3, period: 3.6 },
       { kind: 'icicle', at: 0.61, offset: 0.6, period: 3.5, phase: 1.5 },
       { kind: 'can', at: 0.61, offset: 0.6 },
+      { kind: 'anar', at: 0.7, period: 5, phase: 1.5 },
       { kind: 'icicle', at: 0.73, period: 3.6 },
       { kind: 'icicle', at: 0.77, offset: 0.35, period: 3.6, phase: 1.2 },
       { kind: 'icicle', at: 0.81, offset: -0.35, period: 3.6, phase: 2.4 },
@@ -545,7 +461,7 @@ export const LEVELS: readonly LevelDef[] = [
   {
     id: 'black-ice',
     theme: 'frost',
-    par: 42,
+    par: 52,
     path: [
       [0, 0, 185],
       [-40, -480, 165],
@@ -565,29 +481,19 @@ export const LEVELS: readonly LevelDef[] = [
       [1360, -5320, 185],
     ],
     checkpoints: [0.3, 0.57, 0.78],
-    scenery: [
-      { kind: 'hawz', at: 0.06, side: 1 },
-      { kind: 'yakhchal', at: 0.15, side: -1 },
-      { kind: 'yakhchal', at: 0.24, side: 1 },
-      { kind: 'sarv', at: 0.33, side: -1 },
-      { kind: 'sarv', at: 0.42, side: 1 },
-      { kind: 'aftabeh', at: 0.51, side: -1 },
-      { kind: 'hawz', at: 0.6, side: 1 },
-      { kind: 'hawz', at: 0.69, side: -1 },
-      { kind: 'shelang', at: 0.78, side: 1 },
-      { kind: 'shelang', at: 0.87, side: -1 },
-    ],
     items: [
       { kind: 'can', at: 0.07, offset: -0.5 },
       { kind: 'ice', from: 0.12, to: 0.22 },
       { kind: 'urchin', at: 0.245, offset: -0.55 },
       { kind: 'can', at: 0.26, offset: 0.5 },
+      { kind: 'anar', at: 0.27, period: 5 },
       { kind: 'ice', from: 0.34, to: 0.45 },
       { kind: 'urchin', at: 0.39, offset: -0.55 },
       { kind: 'urchin', at: 0.445, offset: 0.55 },
       { kind: 'can', at: 0.42, offset: 0.55 },
       { kind: 'current', from: 0.48, to: 0.54, strength: -90 },
       { kind: 'can', at: 0.52, offset: -0.5 },
+      { kind: 'anar', at: 0.545, period: 6, phase: 1 },
       { kind: 'ice', from: 0.61, to: 0.74 },
       { kind: 'whirl', at: 0.66, offset: 0.75, radius: 115, pull: 170 },
       { kind: 'can', at: 0.7, offset: -0.55 },
@@ -601,7 +507,7 @@ export const LEVELS: readonly LevelDef[] = [
   {
     id: 'frostbite-flume',
     theme: 'frost',
-    par: 54,
+    par: 64,
     path: [
       [0, 0, 175],
       [120, -440, 140],
@@ -621,18 +527,6 @@ export const LEVELS: readonly LevelDef[] = [
       [900, -5200, 175],
     ],
     checkpoints: [0.27, 0.51, 0.76],
-    scenery: [
-      { kind: 'sarv', at: 0.06, side: -1 },
-      { kind: 'hawz', at: 0.15, side: 1 },
-      { kind: 'yakhchal', at: 0.24, side: -1 },
-      { kind: 'aftabeh', at: 0.33, side: 1 },
-      { kind: 'hawz', at: 0.42, side: -1 },
-      { kind: 'yakhchal', at: 0.51, side: 1 },
-      { kind: 'sarv', at: 0.6, side: -1 },
-      { kind: 'sarv', at: 0.69, side: 1 },
-      { kind: 'shelang', at: 0.78, side: -1 },
-      { kind: 'shelang', at: 0.87, side: 1 },
-    ],
     items: [
       { kind: 'can', at: 0.06, offset: 0.5 },
       { kind: 'ice', from: 0.09, to: 0.2 },
@@ -641,6 +535,7 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'can', at: 0.23, offset: 0.5 },
       { kind: 'urchin', at: 0.25, offset: -0.6 },
       { kind: 'gate', at: 0.32, period: 4 },
+      { kind: 'anar', at: 0.345, period: 5.5 },
       { kind: 'icicle', at: 0.38, offset: -0.4, period: 3.2 },
       { kind: 'can', at: 0.41, offset: 0.5 },
       { kind: 'urchin', at: 0.45, offset: -0.45, orbit: 25, speed: 1.7 },
@@ -650,6 +545,7 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'icicle', at: 0.58, period: 3 },
       { kind: 'urchin', at: 0.62, offset: 0.55 },
       { kind: 'can', at: 0.64, offset: -0.5 },
+      { kind: 'anar', at: 0.68, period: 5.5, phase: 2 },
       { kind: 'whirl', at: 0.71, offset: 0.75, radius: 105, pull: 190 },
       { kind: 'urchin', at: 0.735, offset: -0.55 },
       { kind: 'current', from: 0.79, to: 0.86, strength: -110 },
@@ -688,18 +584,6 @@ export const LEVELS: readonly LevelDef[] = [
       [1080, -6440, 170],
     ],
     checkpoints: [0.21, 0.41, 0.61, 0.82],
-    scenery: [
-      { kind: 'yakhchal', at: 0.06, side: 1 },
-      { kind: 'sarv', at: 0.15, side: -1 },
-      { kind: 'hawz', at: 0.24, side: 1 },
-      { kind: 'yakhchal', at: 0.33, side: -1 },
-      { kind: 'sarv', at: 0.42, side: 1 },
-      { kind: 'sarv', at: 0.51, side: -1 },
-      { kind: 'aftabeh', at: 0.6, side: 1 },
-      { kind: 'hawz', at: 0.69, side: -1 },
-      { kind: 'shelang', at: 0.78, side: 1 },
-      { kind: 'shelang', at: 0.87, side: -1 },
-    ],
     items: [
       { kind: 'flame', at: 0.03, offset: 0.2 },
       { kind: 'urchin', at: 0.07, offset: -0.65 },
@@ -717,7 +601,9 @@ export const LEVELS: readonly LevelDef[] = [
       { kind: 'icicle', at: 0.46, offset: 0.3, period: 3 },
       { kind: 'icicle', at: 0.495, offset: -0.3, period: 3, phase: 1.5 },
       { kind: 'can', at: 0.52, offset: 0.5 },
+      { kind: 'anar', at: 0.545, period: 6, phase: 1.5 },
       { kind: 'gate', at: 0.57, period: 3.4, phase: 2 },
+      { kind: 'anar', at: 0.63, period: 6 },
       { kind: 'paddle', at: 0.65, length: 75, speed: 1.8 },
       { kind: 'can', at: 0.68, offset: 0.5 },
       { kind: 'urchin', at: 0.71, offset: -0.5, orbit: 22, speed: -2 },

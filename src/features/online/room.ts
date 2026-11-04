@@ -12,6 +12,7 @@ import {
   stepWorld,
   type World,
 } from '../game/engine/world'
+import { noStickers, normalizeStickers, type BeanStickers } from '../game/stickers'
 import {
   CLOSE_ABUSE,
   CLOSE_CODES,
@@ -60,7 +61,12 @@ export type RoomHost = {
   reportPlayers: (code: string, count: number) => void
 }
 
-type Player = { number: number; goneAt: number | null; name?: string }
+type Player = {
+  number: number
+  goneAt: number | null
+  name?: string
+  stickers?: BeanStickers
+}
 
 /** All that survives a reset. Tokens stay in here and never reach other players. */
 export type SavedRoom = {
@@ -249,6 +255,9 @@ export class Room {
       case 'name':
         this.rename(token, message.name)
         break
+      case 'stickers':
+        this.setStickers(token, message.stickers)
+        break
       default:
         break
     }
@@ -298,6 +307,20 @@ export class Room {
     const name = normalizeName(text)
     if (!player || (player.name ?? '') === name) return
     player.name = name
+    this.announce()
+    this.save()
+  }
+
+  private setStickers(token: string, raw: unknown) {
+    const player = this.saved.players[token]
+    if (!player) return
+    const stickers = normalizeStickers(raw)
+    if (
+      JSON.stringify(player.stickers ?? noStickers()) === JSON.stringify(stickers)
+    ) {
+      return
+    }
+    player.stickers = stickers
     this.announce()
     this.save()
   }
@@ -434,6 +457,9 @@ export class Room {
         status,
         owner: player?.number ?? null,
         name: player?.name || undefined,
+        stickers: player?.stickers?.[seat].length
+          ? player.stickers[seat]
+          : undefined,
       }
     })
   }

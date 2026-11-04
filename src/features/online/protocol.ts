@@ -1,9 +1,10 @@
 import { LEVELS } from '../game/engine/levels'
 import { SNAPSHOT_LAYOUT, type Snapshot } from '../game/engine/snapshot'
 import type { GameEvent } from '../game/engine/world'
+import { STICKER_IDS, type StickerId } from '../game/stickers'
 
 /** Bump when messages change in a way the derived part below can't see. */
-const PROTOCOL_VERSION = 2
+const PROTOCOL_VERSION = 3
 
 function hash(text: string) {
   let value = 5381
@@ -16,9 +17,10 @@ function hash(text: string) {
 /**
  * The game and the room service deploy separately, so for a moment they can disagree.
  * Levels are part of this because a snapshot's length depends on what a level contains.
+ * Stickers are because a client can't draw one it has never heard of.
  */
 export const PROTOCOL = `${PROTOCOL_VERSION}-${hash(
-  SNAPSHOT_LAYOUT + JSON.stringify(LEVELS),
+  SNAPSHOT_LAYOUT + JSON.stringify(LEVELS) + STICKER_IDS.join(),
 )}`
 
 export const MAX_MESSAGE_LENGTH = 512
@@ -35,6 +37,8 @@ export type SeatView = {
   status: SeatStatus
   /** What the owner calls themselves, if they've said. */
   name?: string
+  /** What the owner stuck on this bean, if anything. */
+  stickers?: StickerId[]
 }
 
 export type RoomView = {
@@ -59,6 +63,8 @@ export type ClientMessage =
   | { t: 'bots'; on: boolean }
   | { t: 'leave' }
   | { t: 'name'; name: string }
+  /** One list per seat. Each only shows while its sender owns that seat. */
+  | { t: 'stickers'; stickers: StickerId[][] }
 
 export type ServerMessage =
   /** `g` is the room's largest gap between ticks over the last second, in ms. */
@@ -130,6 +136,8 @@ export function parseClientMessage(text: string): ClientMessage | null {
       return typeof message.on === 'boolean' ? (message as ClientMessage) : null
     case 'name':
       return typeof message.name === 'string' ? (message as ClientMessage) : null
+    case 'stickers':
+      return Array.isArray(message.stickers) ? (message as ClientMessage) : null
     case 'lobby':
     case 'leave':
       return message as ClientMessage

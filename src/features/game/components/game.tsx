@@ -44,8 +44,15 @@ import type { ShareCardRun } from '../render/share-card'
 import { Sound } from '../render/sound'
 import { awardsFor, createTally, tallyEvent, type Tally } from '../tally'
 import { BeanFace } from './bean-face'
-import { Lobby, seatLabel, sessionErrorText } from './lobby'
-import { Menu, Stars } from './menu'
+import { FeedbackPanel } from './feedback-panel'
+import {
+  loadPlayerName,
+  Lobby,
+  NameField,
+  seatLabel,
+  sessionErrorText,
+} from './lobby'
+import { isTextField, Menu, Stars } from './menu'
 import { normalizeCode, OnlineEntry } from './online-entry'
 import { Panel, PanelButton } from './panel'
 import { ShareButton } from './share-button'
@@ -196,6 +203,8 @@ export function Game() {
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   const [paused, setPaused] = useState(false)
   const [muted, setMuted] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const closeFeedback = useCallback(() => setFeedbackOpen(false), [])
   const [result, setResult] = useState<Result | null>(null)
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [touchMode, setTouchMode] = useState(startsInTouchMode)
@@ -287,6 +296,7 @@ export function Game() {
       url: ROOMS_URL,
       code,
       token: roomToken(),
+      name: loadPlayerName(),
       createSocket: devSocket(),
     })
     sessionRef.current = next
@@ -361,6 +371,7 @@ export function Game() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isTextField(event.target)) return
       soundRef.current?.unlock()
       if (
         KEY_SEATS[event.code] &&
@@ -625,10 +636,15 @@ export function Game() {
           touchMode={touchMode}
           onPlay={startLevel}
           onLocaleChange={setLocale}
+          onFeedback={() => setFeedbackOpen(true)}
           online={
             ROOMS_URL && <OnlineEntry t={t} url={ROOMS_URL} onEnter={enterRoom} />
           }
         />
+      )}
+
+      {screen.name === 'menu' && feedbackOpen && (
+        <FeedbackPanel t={t} onClose={closeFeedback} />
       )}
 
       {screen.name === 'online' && session && !inOnlineRace && !online?.error && (
@@ -655,7 +671,7 @@ export function Game() {
               roomSeat.owner !== room?.you &&
               (roomSeat.status === 'here' || roomSeat.status === 'away')
             const owner = roomSeat && room && (
-              <span className="text-xs leading-none font-bold">
+              <span className="max-w-full truncate text-xs leading-none font-bold">
                 {seatLabel(t, roomSeat, room.you)}
               </span>
             )
@@ -830,6 +846,9 @@ export function Game() {
             <Panel title={t.paused.title}>
               {inOnlineRace && (
                 <p className="text-center font-bold">{t.online.raceGoesOn}</p>
+              )}
+              {inOnlineRace && session && room && (
+                <NameField t={t} you={room.you} session={session} />
               )}
               <PanelButton primary onClick={togglePause}>
                 {t.paused.resume}

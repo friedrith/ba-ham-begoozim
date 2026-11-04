@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Coffee,
   Github,
+  MessageSquarePlus,
   Star,
   Trophy,
 } from 'lucide-react'
@@ -40,6 +41,7 @@ type MenuProps = {
   touchMode: boolean
   onPlay: (levelIndex: number) => void
   onLocaleChange: (locale: Locale) => void
+  onFeedback: () => void
   /** Shown between the levels and the instructions. */
   online?: React.ReactNode
 }
@@ -71,6 +73,11 @@ export function Stars({
   )
 }
 
+/** Keys pressed in a form belong to the form, not to the game. */
+export function isTextField(target: EventTarget | null) {
+  return target instanceof Element && target.closest('input, textarea') !== null
+}
+
 /** The course to offer first: the next one nobody has finished, else the first one. */
 function nextLevelIndex(progress: Progress) {
   const next = LEVELS.findIndex((level) => !progress[level.id])
@@ -83,6 +90,7 @@ export function Menu({
   touchMode,
   onPlay,
   onLocaleChange,
+  onFeedback,
   online,
 }: MenuProps) {
   const sliderRef = useRef<HTMLOListElement>(null)
@@ -134,6 +142,7 @@ export function Menu({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isTextField(event.target)) return
       if (event.code !== 'ArrowLeft' && event.code !== 'ArrowRight') return
       const forwards = event.code === (t.dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight')
       const next = selectedRef.current + (forwards ? 1 : -1)
@@ -147,6 +156,15 @@ export function Menu({
     <div className="bg-ink/45 absolute inset-0 touch-pan-y overflow-y-auto overscroll-contain">
       <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-center gap-4 px-4 py-6">
         <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            aria-label={t.menu.feedback}
+            title={t.menu.feedback}
+            onClick={onFeedback}
+            className="bg-cream border-ink flex size-9 cursor-pointer items-center justify-center rounded-full border-[3px]"
+          >
+            <MessageSquarePlus aria-hidden="true" className="text-ink size-4" />
+          </button>
           <a
             href={REPO_URL}
             target="_blank"
@@ -188,11 +206,12 @@ export function Menu({
           aria-label={t.menu.levels}
           className="bg-cream border-ink shadow-ink flex flex-col gap-3 rounded-2xl border-[3px] p-3 shadow-[0_5px_0] md:p-4"
         >
+          {/* Relative so it clips the absolute sr-only text of the levels out of view. */}
           <ol
             ref={sliderRef}
             dir={t.dir}
             onScroll={syncSelected}
-            className="flex touch-pan-x touch-pan-y snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain [&::-webkit-scrollbar]:hidden"
+            className="relative flex touch-pan-x touch-pan-y snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain [&::-webkit-scrollbar]:hidden"
           >
             {LEVELS.map((level, index) => {
               const text = t.levels[level.id]

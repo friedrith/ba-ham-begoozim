@@ -30,6 +30,20 @@ export const fa: Messages = {
     totalStars: (count) => `${count} ستاره`,
     sourceCode: 'کد بازی توی گیت‌هاب',
     buyCoffee: 'یه قهوه مهمونم کن',
+    feedback: 'نظر بده، ایده پیشنهاد کن یا باگ گزارش کن',
+  },
+  feedback: {
+    title: 'بهمون بگو',
+    kind: 'دربارهٔ چیه؟',
+    kinds: { bug: 'باگ', feature: 'ایده', feedback: 'نظر' },
+    message: 'چی تو سرته؟',
+    email: 'ایمیلت، اگه جواب می‌خوای',
+    send: 'بفرست',
+    sending: 'داره می‌ره…',
+    cancel: 'بی‌خیال',
+    close: 'بستن',
+    sent: 'مرسی! پیامت رسید.',
+    failed: 'نرفت. یه کم دیگه دوباره امتحان کن.',
   },
   hud: {
     time: 'زمان',
@@ -120,6 +134,7 @@ export const fa: Messages = {
     seatsHint:
       'روی یه لوبیا بزن تا مال تو بشه. یه نفر می‌تونه چند تا رو با هم بچرخونه.',
     you: 'خودت',
+    yourName: 'اسمت',
     player: (number) => `بازیکن ${number}`,
     empty: 'خالی',
     bot: 'ربات',

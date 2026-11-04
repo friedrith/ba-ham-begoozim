@@ -72,6 +72,8 @@ type SessionOptions = {
   url: string
   code: string
   token: string
+  /** What to call this player. The room hears it on every connection. */
+  name?: string
   createSocket?: (url: string) => SocketLike
   now?: () => number
   /** Off in tests, which call `pump` themselves. */
@@ -108,6 +110,7 @@ export class OnlineSession {
   private readonly createSocket: (url: string) => SocketLike
   private readonly socketUrl: string
   private readonly token: string
+  private name: string
 
   private socket: SocketLike | null = null
   private pumpTimer: ReturnType<typeof setInterval> | null = null
@@ -146,6 +149,7 @@ export class OnlineSession {
     this.createSocket = options.createSocket ?? ((url) => new WebSocket(url))
     this.socketUrl = `${options.url.replace(/^http/, 'ws')}/rooms/${options.code}/ws`
     this.token = options.token
+    this.name = options.name ?? ''
     this.open()
     if (options.autoPump !== false) {
       this.pumpTimer = setInterval(() => this.pump(), PING_BURST_MS)
@@ -160,6 +164,8 @@ export class OnlineSession {
   }
 
   getState = () => this.state
+
+  getName = () => this.name
 
   /** Timers run here so that they all keep going without animation frames. */
   pump() {
@@ -277,6 +283,12 @@ export class OnlineSession {
     if (take && this.state.lostSeat === seat) this.update({ lostSeat: null })
   }
 
+  setName(name: string) {
+    if (name === this.name) return
+    this.name = name
+    this.send({ t: 'name', name })
+  }
+
   leave() {
     this.send({ t: 'leave' })
     this.close()
@@ -319,6 +331,8 @@ export class OnlineSession {
       this.burstLeft = PING_BURST
       this.nextPingAt = 0
       this.send({ t: 'hello', protocol: PROTOCOL, token: this.token })
+      // Also when empty, since it may have been cleared while the line was down.
+      this.send({ t: 'name', name: this.name })
       this.update({ status: 'open', error: null })
       this.pump()
     })

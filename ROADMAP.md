@@ -83,3 +83,19 @@ Design notes:
 
 **Done when** four players on separate devices can finish a level together over
 a normal internet connection.
+
+## 6. Second language: Persian
+
+Offer the whole game in Persian alongside English.
+
+- [ ] Move all player-facing text into translation files, including level names,
+      blurbs and hints from `engine/levels.ts`
+- [ ] Translate into Persian and have a native speaker review the humour
+- [ ] Pick the language from the browser, with a switcher that remembers the choice
+- [ ] Support right-to-left layout in the menu, HUD and panels, and add a Persian
+      font that suits the game's style
+- [ ] Show numbers such as times and pars in Persian digits
+- [ ] Make keyboard controls work on a Persian keyboard layout
+
+**Done when** a Persian speaker can play from the menu to the last level without
+seeing English or broken layout.

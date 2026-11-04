@@ -42,6 +42,12 @@ import {
 } from '../render/scene'
 import type { ShareCardRun } from '../render/share-card'
 import { Sound } from '../render/sound'
+import {
+  loadStickers,
+  noStickers,
+  saveStickers,
+  type BeanStickers,
+} from '../stickers'
 import { awardsFor, createTally, tallyEvent, type Tally } from '../tally'
 import { BeanFace } from './bean-face'
 import { FeedbackPanel } from './feedback-panel'
@@ -57,6 +63,7 @@ import { JoinRoomPanel, normalizeCode, OnlineEntry } from './online-entry'
 import { Panel, PanelButton } from './panel'
 import { PlayersOnline } from './players-online'
 import { ShareButton } from './share-button'
+import { StickerPanel } from './sticker-panel'
 
 const KEY_SEATS: Record<string, number[]> = {
   KeyQ: [0],
@@ -200,12 +207,17 @@ export function Game() {
   const { t, setLocale } = useLocale()
   const tRef = useRef(t)
   const fontRef = useRef('sans-serif')
+  const stickersRef = useRef<BeanStickers>(noStickers())
 
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   const [paused, setPaused] = useState(false)
   const [muted, setMuted] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const closeFeedback = useCallback(() => setFeedbackOpen(false), [])
+  const [stickers, setStickers] = useState<BeanStickers>(loadStickers)
+  /** The race this was opened before, so that the next one to start closes it. */
+  const [stickersOpenAt, setStickersOpenAt] = useState<number | null>(null)
+  const closeStickers = useCallback(() => setStickersOpenAt(null), [])
   const [joinOpen, setJoinOpen] = useState(false)
   const closeJoin = useCallback(() => setJoinOpen(false), [])
   const [result, setResult] = useState<Result | null>(null)
@@ -221,7 +233,25 @@ export function Game() {
     noState,
   )
   const room = online?.room ?? null
+  const raceId = room?.raceId ?? 0
   const inOnlineRace = screen.name === 'online' && room?.phase === 'race'
+  // In a room each bean wears what its owner chose, so empty seats go bare.
+  const shownStickers: BeanStickers =
+    screen.name === 'online' && room
+      ? room.seats.map((seat) => seat.stickers ?? [])
+      : stickers
+  /** The bean the sticker panel opens on: your own, if you have one. */
+  const mySeat = room?.seats.findIndex((seat) => seat.owner === room.you) ?? -1
+
+  useLayoutEffect(() => {
+    stickersRef.current = shownStickers
+  })
+
+  const changeStickers = useCallback((next: BeanStickers) => {
+    setStickers(next)
+    saveStickers(next)
+    sessionRef.current?.setStickers(next)
+  }, [])
 
   useEffect(() => {
     soundRef.current = new Sound()
@@ -300,6 +330,7 @@ export function Game() {
       code,
       token: roomToken(),
       name: loadPlayerName(),
+      stickers: loadStickers(),
       createSocket: devSocket(),
     })
     sessionRef.current = next
@@ -500,6 +531,7 @@ export function Game() {
         rankUp: rank !== rankFor(totalStars(before)),
         trophyUnlocked: hasTrophy(after) && !hasTrophy(before),
         card: {
+          stickers: stickersRef.current,
           rank,
           stars: totalStars(after),
           levelName: tRef.current.levels[world.level.id].name,
@@ -574,6 +606,7 @@ export function Game() {
           font,
           reducedMotion,
           dir: text.dir,
+          stickers: stickersRef.current,
         },
       )
       if (!demo)
@@ -635,10 +668,12 @@ export function Game() {
         <Menu
           t={t}
           progress={progress}
+          stickers={stickers}
           touchMode={touchMode}
           onPlay={startLevel}
           onLocaleChange={setLocale}
           onFeedback={() => setFeedbackOpen(true)}
+          onStickers={() => setStickersOpenAt(raceId)}
           online={
             ROOMS_URL && (
               <OnlineEntry
@@ -669,7 +704,13 @@ export function Game() {
       )}
 
       {screen.name === 'online' && session && !inOnlineRace && !online?.error && (
-        <Lobby t={t} room={room} session={session} onLeave={leaveRoom} />
+        <Lobby
+          t={t}
+          room={room}
+          session={session}
+          onStickers={() => setStickersOpenAt(raceId)}
+          onLeave={leaveRoom}
+        />
       )}
 
       {screen.name === 'online' && online?.error && (
@@ -681,6 +722,16 @@ export function Game() {
             {t.online.backToMenu}
           </PanelButton>
         </Panel>
+      )}
+
+      {stickersOpenAt === raceId && !level && !online?.error && (
+        <StickerPanel
+          t={t}
+          stickers={stickers}
+          initialSeat={Math.max(mySeat, 0)}
+          onChange={changeStickers}
+          onClose={closeStickers}
+        />
       )}
 
       {level && (
@@ -743,6 +794,7 @@ export function Game() {
                   <span className="flex items-center gap-1">
                     <BeanFace
                       seat={i}
+                      stickers={shownStickers[i]}
                       className={
                         touchMode ? 'size-12 shrink-0 md:size-16' : 'size-9'
                       }
@@ -919,7 +971,12 @@ export function Game() {
                 <ul className="flex w-full flex-col gap-1">
                   {result.card.awards.map((award, seat) => (
                     <li key={seat} className="flex items-center gap-3">
-                      <BeanFace seat={seat} className="size-9 shrink-0" dance />
+                      <BeanFace
+                        seat={seat}
+                        stickers={result.card.stickers[seat]}
+                        className="size-9 shrink-0"
+                        dance
+                      />
                       <span className="flex min-w-0 flex-col text-xs leading-tight">
                         <span className="font-display text-base leading-tight">
                           {t.awards[award.id].title}

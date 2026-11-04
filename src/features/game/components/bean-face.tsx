@@ -1,9 +1,17 @@
 import { clsx } from 'clsx'
 
 import { BEAN_COLORS, BEAN_ICON_PATH } from '../render/scene'
+import {
+  STICKER_EDGE,
+  STICKER_SCALE,
+  STICKER_SPOTS,
+  STICKERS,
+  type StickerId,
+} from '../stickers'
 
 type BeanFaceProps = {
   seat: number
+  stickers?: StickerId[]
   className?: string
   /** Arms up for a Persian dance: swaying hips, swaying arms, twirling wrists. */
   dance?: boolean
@@ -50,8 +58,45 @@ function DancingArm({
   )
 }
 
+/** A sticker's paper edge, then its picture on top. */
+function StickerShapes({ id }: { id: StickerId }) {
+  const shapes = STICKERS[id]
+  return (
+    <>
+      {shapes.map(({ d }) => (
+        <path
+          key={d}
+          d={d}
+          fill="#fff"
+          stroke="#fff"
+          strokeWidth={STICKER_EDGE}
+          strokeLinejoin="round"
+        />
+      ))}
+      {shapes.map(({ d, fill }) => (
+        <path key={d} d={d} fill={fill} />
+      ))}
+    </>
+  )
+}
+
+/** A sticker on its own, for the picker. */
+export function StickerIcon({
+  id,
+  className,
+}: {
+  id: StickerId
+  className?: string
+}) {
+  return (
+    <svg viewBox="-7 -7 14 14" className={className} aria-hidden="true">
+      <StickerShapes id={id} />
+    </svg>
+  )
+}
+
 /** The in-game bean as an icon, for the menu and the seat pads. */
-export function BeanFace({ seat, className, dance }: BeanFaceProps) {
+export function BeanFace({ seat, stickers, className, dance }: BeanFaceProps) {
   // Each bean joins in just after the one before, once the card has landed.
   const delay = `${1 + seat * 0.15}s`
   return (
@@ -88,6 +133,17 @@ export function BeanFace({ seat, className, dance }: BeanFaceProps) {
         strokeWidth="2.2"
         strokeLinecap="round"
       />
+      {stickers?.map((id, i) => {
+        const { x, y, degrees } = STICKER_SPOTS[i]
+        return (
+          <g
+            key={id}
+            transform={`translate(${x} ${y}) rotate(${degrees}) scale(${STICKER_SCALE})`}
+          >
+            <StickerShapes id={id} />
+          </g>
+        )
+      })}
     </svg>
   )
 }

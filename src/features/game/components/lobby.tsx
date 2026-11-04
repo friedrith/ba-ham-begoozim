@@ -99,12 +99,14 @@ export function Lobby({
   t,
   room,
   session,
+  onStickers,
   onLeave,
 }: {
   t: Messages
   /** Null until the room has answered. */
   room: RoomView | null
   session: OnlineSession
+  onStickers: () => void
   onLeave: () => void
 }) {
   if (!room) {
@@ -122,6 +124,7 @@ export function Lobby({
       t={t}
       room={room}
       session={session}
+      onStickers={onStickers}
       onLeave={onLeave}
     />
   )
@@ -131,11 +134,13 @@ function RoomPanel({
   t,
   room,
   session,
+  onStickers,
   onLeave,
 }: {
   t: Messages
   room: RoomView
   session: OnlineSession
+  onStickers: () => void
   onLeave: () => void
 }) {
   const [level, setLevel] = useState(room.level)
@@ -193,7 +198,11 @@ function RoomPanel({
                     taken && 'opacity-60',
                   )}
                 >
-                  <BeanFace seat={i} className="size-9 shrink-0" />
+                  <BeanFace
+                    seat={i}
+                    stickers={seat.stickers}
+                    className="size-9 shrink-0"
+                  />
                   <span className="min-w-0 leading-tight">
                     <span className="block text-sm font-bold">
                       {t.seats[i].name}
@@ -208,6 +217,8 @@ function RoomPanel({
           })}
         </ul>
       </section>
+
+      <PanelButton onClick={onStickers}>{t.stickers.open}</PanelButton>
 
       <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
         <input

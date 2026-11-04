@@ -1,4 +1,4 @@
-# Toot Canal
+# Ba Ham Begoozim
 
 A couch co-op browser game. Four baked beans share one clawfoot bathtub, and the
 only engine on board is what the beans had for lunch. Everyone blasts from their

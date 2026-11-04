@@ -2,7 +2,7 @@
   "name": "ba-ham-begoozim",
   "version": "0.1.0",
   "private": true,
-  "description": "Toot Canal — a couch co-op browser game: four baked beans steer one bathtub by blasting in harmony",
+  "description": "Ba Ham Begoozim — a couch co-op browser game: four baked beans steer one bathtub by blasting in harmony",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

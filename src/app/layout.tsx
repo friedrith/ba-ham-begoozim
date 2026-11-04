@@ -38,7 +38,7 @@ const description =
   'A co-op browser game: four baked beans steer one bathtub by blasting in harmony. Play together on the same device or remotely online.'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ba-ham-begoozim.vercel.app'),
+  metadataBase: new URL('https://gooz.zendegi.io'),
   title,
   description,
   // The preview image itself comes from opengraph-image.tsx.

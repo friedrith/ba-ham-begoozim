@@ -361,7 +361,7 @@ describe('levels', () => {
     expect(new Set(LEVELS.map((level) => level.id)).size).toBe(LEVELS.length)
   })
 
-  test('the last level is clearly harder than The Boiler Room', () => {
+  test('the last level is clearly harder than Noruz Nightmare', () => {
     const boiler = measureLevel(LEVELS.find((level) => level.id === 'boiler-room')!)
     const last = measureLevel(LEVELS[LEVELS.length - 1])
     expect(last.width).toBeLessThan(boiler.width * 0.8)

@@ -36,3 +36,18 @@ gas back, and a chord.
 
 `bun test` runs a bot through every level, so a course that can't be finished
 fails the suite. The same bot drives the demo behind the menu.
+
+## Analytics
+
+Pageviews and game events (`level_started`, `level_finished`, `level_abandoned`)
+go to [PostHog](https://posthog.com) when these variables are set. The Vercel
+integration sets them for Preview and Production, so local dev sends nothing.
+PostHog is used for analytics only: flags, replay, surveys and the rest stay off.
+
+| Variable                            | Value                                                  |
+| ----------------------------------- | ------------------------------------------------------ |
+| `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` | Project token                                          |
+| `NEXT_PUBLIC_POSTHOG_HOST`          | Ingestion host, defaults to `https://us.i.posthog.com` |
+
+The game runs PostHog in cookieless mode, so **turn on cookieless server hash mode
+in the PostHog project settings**. PostHog drops the events otherwise.

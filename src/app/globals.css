@@ -21,7 +21,9 @@
   --animate-hint: hint 9s ease-out forwards;
   --animate-card-pop: card-pop 0.6s ease-out both;
   --animate-star-stamp: star-stamp 0.45s ease-out both;
-  --animate-bean-hop: bean-hop 0.55s ease-in-out 3;
+  --animate-bean-sway: bean-sway 1.2s ease-in-out infinite;
+  --animate-arm-sway: arm-sway 0.6s ease-in-out infinite alternate;
+  --animate-wrist-twirl: wrist-twirl 0.6s linear infinite;
   --animate-confetti: confetti linear both;
 
   @keyframes hint {
@@ -65,13 +67,32 @@
     }
   }
 
-  @keyframes bean-hop {
+  @keyframes bean-sway {
     0%,
     100% {
-      transform: none;
+      transform: translateX(-0.15rem) rotate(-8deg);
+    }
+    25%,
+    75% {
+      transform: translateY(-0.15rem);
     }
     50% {
-      transform: translateY(-0.6rem) rotate(-8deg);
+      transform: translateX(0.15rem) rotate(8deg);
+    }
+  }
+
+  @keyframes arm-sway {
+    from {
+      transform: rotate(-18deg);
+    }
+    to {
+      transform: rotate(18deg);
+    }
+  }
+
+  @keyframes wrist-twirl {
+    to {
+      transform: rotate(360deg);
     }
   }
 

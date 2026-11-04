@@ -916,12 +916,8 @@ export function Game() {
                 </dl>
                 <ul className="flex w-full flex-col gap-1">
                   {result.card.awards.map((award, seat) => (
-                    <li key={seat} className="flex items-center gap-2">
-                      <BeanFace
-                        seat={seat}
-                        className="motion-safe:animate-bean-hop size-9 shrink-0"
-                        style={{ animationDelay: `${1 + seat * 0.12}s` }}
-                      />
+                    <li key={seat} className="flex items-center gap-3">
+                      <BeanFace seat={seat} className="size-9 shrink-0" dance />
                       <span className="flex min-w-0 flex-col text-xs leading-tight">
                         <span className="font-display text-base leading-tight">
                           {t.awards[award.id].title}

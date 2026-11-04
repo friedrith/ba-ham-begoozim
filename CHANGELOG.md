@@ -4,6 +4,9 @@ All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Don't edit this file in a PR: add an entry to [changelog.d](changelog.d/README.md),
+where changes wait until the next release.
+
 ## [Unreleased]
 
 ### Added

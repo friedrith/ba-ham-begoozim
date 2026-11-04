@@ -25,6 +25,7 @@ export const en: Messages = {
     levelCount: (count) => `Level ${count}`,
     totalStars: (count) => `${count} stars`,
     sourceCode: 'View the source on GitHub',
+    buyCoffee: 'Buy me a coffee',
   },
   hud: {
     time: 'Time',

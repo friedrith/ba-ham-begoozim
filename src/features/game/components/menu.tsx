@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { ChevronLeft, ChevronRight, Github, Star } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Coffee, Github, Star } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { LEVELS } from '../engine/levels'
@@ -16,6 +16,7 @@ import { LevelPreview } from './level-preview'
 import { RichText } from './rich-text'
 
 const REPO_URL = 'https://github.com/friedrith/ba-ham-begoozim'
+const COFFEE_URL = 'https://buymeacoffee.com/friedrith'
 
 const arrowButton =
   'bg-white border-ink shrink-0 cursor-pointer rounded-full border-[3px] p-2 transition-transform hover:-translate-y-0.5 disabled:cursor-default disabled:opacity-30 disabled:hover:translate-y-0'
@@ -141,6 +142,15 @@ export function Menu({
             className="bg-cream border-ink flex size-9 items-center justify-center rounded-full border-[3px]"
           >
             <Github aria-hidden="true" className="text-ink size-4" />
+          </a>
+          <a
+            href={COFFEE_URL}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={t.menu.buyCoffee}
+            className="bg-cream border-ink flex size-9 items-center justify-center rounded-full border-[3px]"
+          >
+            <Coffee aria-hidden="true" className="text-ink size-4" />
           </a>
           <button
             type="button"

@@ -48,7 +48,7 @@ type MenuProps = {
   onStickers: () => void
   /** Shown between the levels and the instructions. */
   online?: React.ReactNode
-  /** Shown under the tagline. */
+  /** Pinned over the menu, outside its scrolling. */
   players?: React.ReactNode
 }
 
@@ -168,7 +168,7 @@ export function Menu({
 
   return (
     <div className="bg-ink/45 absolute inset-0 touch-pan-y overflow-y-auto overscroll-contain">
-      <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-center gap-4 px-4 py-6">
+      <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-center gap-4 px-4 pt-6 pb-14">
         <div className="flex items-center justify-end gap-2">
           <button
             type="button"
@@ -222,7 +222,6 @@ export function Menu({
           <p className="bg-cream border-ink rounded-full border-2 px-4 py-1 text-sm font-bold md:text-base">
             {t.tagline}
           </p>
-          {players}
         </header>
 
         <section
@@ -392,6 +391,7 @@ export function Menu({
           </p>
         </section>
       </div>
+      {players}
     </div>
   )
 }

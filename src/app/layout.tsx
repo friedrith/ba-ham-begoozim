@@ -18,7 +18,7 @@ const nunito = Nunito({
 })
 
 export const metadata: Metadata = {
-  title: 'Toot Canal',
+  title: 'Ba Ham Begoozim',
   description:
     'A couch co-op browser game: four baked beans steer one bathtub by blasting in harmony.',
 }

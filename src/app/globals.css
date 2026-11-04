@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Height too, because a phone in landscape is as wide as a small tablet. */
+@custom-variant tablet (@media (min-width: 48rem) and (min-height: 37.5rem));
+
 /* ---------------------------------------------------------------------------
    Design tokens — Ba Ham Begoozim
    A vintage baked-bean can label: tomato sauce, mustard and cream, with ink.

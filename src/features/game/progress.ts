@@ -24,11 +24,6 @@ export function totalStars(progress: Progress) {
   return LEVELS.reduce((total, { id }) => total + (progress[id]?.stars ?? 0), 0)
 }
 
-/** The trophy asks for every level finished, however badly. The crown asks for more. */
-export function hasTrophy(progress: Progress) {
-  return LEVELS.every(({ id }) => progress[id])
-}
-
 export function rankFor(stars: number): RankId {
   return RANKS.findLast((rank) => stars >= rank.stars)?.id ?? 'squeak'
 }

@@ -26,7 +26,6 @@ import {
 import { formatNumber, formatTime } from '../i18n'
 import { useLocale } from '../i18n/use-locale'
 import {
-  hasTrophy,
   loadProgress,
   rankFor,
   recordRun,
@@ -110,7 +109,6 @@ type Result = {
   harmonies: number
   wipeouts: number
   rankUp: boolean
-  trophyUnlocked: boolean
   card: ShareCardRun
 }
 
@@ -532,7 +530,6 @@ export function Game() {
         harmonies: world.harmonies,
         wipeouts: world.wipeouts,
         rankUp: rank !== rankFor(totalStars(before)),
-        trophyUnlocked: hasTrophy(after) && !hasTrophy(before),
         card: {
           stickers: stickersRef.current,
           rank,
@@ -1022,11 +1019,6 @@ export function Game() {
                     t.ranks[result.card.rank],
                   )}
                 </p>
-                {result.trophyUnlocked && (
-                  <p className="font-display text-sauce text-center text-2xl">
-                    {t.result.trophyUnlocked(t.trophy)}
-                  </p>
-                )}
               </div>
               <ShareButton run={result.card} t={t} />
               {result.levelIndex + 1 < LEVELS.length && (

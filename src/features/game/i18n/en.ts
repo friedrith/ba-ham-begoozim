@@ -79,7 +79,6 @@ export const en: Messages = {
     menu: 'Menu',
     rank: (rank) => `Current title: ${rank}`,
     rankUp: (rank) => `New title: ${rank}!`,
-    trophyUnlocked: (trophy) => `Every canal cleared. You win the ${trophy}!`,
     share: 'Share the evidence',
   },
   ranks: {
@@ -89,7 +88,6 @@ export const en: Messages = {
     duke: 'Duke of Gas',
     king: 'Gooz King',
   },
-  trophy: 'Golden Dudul',
   stickers: {
     open: 'Stickers',
     title: 'Stick it on',

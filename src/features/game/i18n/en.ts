@@ -112,6 +112,7 @@ export const en: Messages = {
   },
   online: {
     title: 'Play online',
+    playersNow: (count) => `${count} playing online now`,
     intro:
       'Everyone on their own device. Make a room and send your friends the link.',
     create: 'Make a room',

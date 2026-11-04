@@ -25,6 +25,10 @@ with plain objects and moved to another host by replacing this one file.
   all four seats stay level up to 500ms round trip with prediction, and start to
   struggle at about 150ms without. Teammates' blasts can't be predicted, so the tub
   drifts slightly until they arrive, by about 12px at 20ms and 90ms.
+- **Rooms report their player counts to one `PlayerCountObject`,** and the menu reads the
+  total from `GET /players` once a minute, so looking at the menu never wakes a room. A
+  count can stay too high for up to an hour if a room dies without its sockets closing,
+  which lasts until that room's alarm next fires.
 
 Press times trust the client, within a 250ms limit. This is co-op, so the worst a
 cheat can do is help the team.

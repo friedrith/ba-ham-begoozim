@@ -105,8 +105,9 @@ few seconds. Taking the local service down mid-race is a good way to test this.
   Whether players feel them is for a playtest to say.
 - **Packet loss hasn't been tried.** WebSockets run over TCP, so a lost packet holds up
   everything behind it.
-- **No people have played it.** The 50ms spread in player timing is an assumption. It
-  also assumes a cue outside the game, like counting aloud. Syncing off the screen,
+- **Harmony rates with people.** Four people on separate devices have finished a level,
+  but their harmony rate wasn't measured. The simulated rates assume a 50ms spread in
+  player timing and a cue outside the game, like counting aloud. Syncing off the screen,
   where each player sees the same moment at a different time, drops harmony to 82% at
   20ms and 90ms, and 62% at 15ms and 100ms.
 - **Bots filling seats beside real people.** Bots finish every run of the first six

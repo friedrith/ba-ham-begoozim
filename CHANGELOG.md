@@ -12,6 +12,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Wipeouts name the bean to blame, every bean gets an award, total stars earn a title, and the result can be shared as a picture ([#25](https://github.com/friedrith/ba-ham-begoozim/pull/25)).
 - The menu shows how many people are playing online, once there are at least two ([#28](https://github.com/friedrith/ba-ham-begoozim/pull/28)).
 - Stickers: put up to three on each bean. They show in the race, on the share card and to teammates online ([#29](https://github.com/friedrith/ba-ham-begoozim/pull/29)).
+- Harder levels have Persian scenery on the banks: a shelang, an aftabeh, a samovar, a farsh and dampayi ([#30](https://github.com/friedrith/ba-ham-begoozim/pull/30)).
 - The result card pops in when the group wins, with stars stamped on, beans dancing Persian and confetti ([#32](https://github.com/friedrith/ba-ham-begoozim/pull/32)).
 
 ### Fixed

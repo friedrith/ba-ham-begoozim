@@ -18,8 +18,11 @@ const FIELDS = {
   gates: 'fixed',
   paddles: 'fixed',
   currents: 'fixed',
+  ice: 'fixed',
   cans: 'custom',
   flames: 'custom',
+  icicles: 'custom',
+  onIce: 'custom',
   seats: 'custom',
   status: 'custom',
   // Events travel beside the snapshot, because each one must arrive exactly once.
@@ -55,7 +58,7 @@ const NUMBERS = (Object.keys(FIELDS) as (keyof typeof FIELDS)[]).filter(
 const STATUSES: readonly World['status'][] = ['countdown', 'racing', 'finished']
 
 /** Changes when the shape of a snapshot does, so old clients can be told to refresh. */
-export const SNAPSHOT_LAYOUT = `${NUMBERS.join()};seats:5;cans:1;flames:1`
+export const SNAPSHOT_LAYOUT = `${NUMBERS.join()};onIce;seats:5;cans:1;flames:1;icicles:2`
 
 /** A world's changing state as a flat list: about a third smaller than named fields. */
 export type Snapshot = number[]
@@ -63,7 +66,7 @@ export type Snapshot = number[]
 const round = (value: number) => Math.round(value * 1000) / 1000
 
 export function encodeSnapshot(world: World): Snapshot {
-  const snapshot = [STATUSES.indexOf(world.status)]
+  const snapshot = [STATUSES.indexOf(world.status), world.onIce ? 1 : 0]
   for (const field of NUMBERS) snapshot.push(round(world[field]))
   for (const seat of world.seats) {
     snapshot.push(
@@ -76,6 +79,7 @@ export function encodeSnapshot(world: World): Snapshot {
   }
   for (const can of world.cans) snapshot.push(can.taken ? 1 : 0)
   for (const flame of world.flames) snapshot.push(round(flame.cooldown))
+  for (const icicle of world.icicles) snapshot.push(icicle.landed, icicle.warned)
   return snapshot
 }
 
@@ -84,6 +88,7 @@ export function applySnapshot(world: World, snapshot: Snapshot) {
   let next = 0
   const read = () => snapshot[next++]
   world.status = STATUSES[read()]
+  world.onIce = read() === 1
   for (const field of NUMBERS) world[field] = read()
   for (const seat of world.seats) {
     seat.gas = read()
@@ -94,5 +99,9 @@ export function applySnapshot(world: World, snapshot: Snapshot) {
   }
   for (const can of world.cans) can.taken = read() === 1
   for (const flame of world.flames) flame.cooldown = read()
+  for (const icicle of world.icicles) {
+    icicle.landed = read()
+    icicle.warned = read()
+  }
   world.events.length = 0
 }

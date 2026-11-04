@@ -21,6 +21,7 @@ export const en: Messages = {
     best: (time) => `Best ${time}`,
     play: 'Play',
     totalStars: (count) => `${count} stars`,
+    sourceCode: 'View the source on GitHub',
   },
   hud: {
     time: 'Time',

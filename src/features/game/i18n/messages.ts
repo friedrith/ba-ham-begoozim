@@ -33,6 +33,8 @@ export type Messages = {
     play: string
     /** `count` is already written as stars out of the total, like 3/36. */
     totalStars: (count: string) => string
+    /** Spoken name of the GitHub icon link. */
+    sourceCode: string
   }
   hud: {
     time: string

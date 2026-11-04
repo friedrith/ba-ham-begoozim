@@ -25,6 +25,7 @@ export const fa: Messages = {
     best: (time) => `بهترین ${time}`,
     play: 'بزن بریم',
     totalStars: (count) => `${count} ستاره`,
+    sourceCode: 'کد بازی توی گیت‌هاب',
   },
   hud: {
     time: 'زمان',

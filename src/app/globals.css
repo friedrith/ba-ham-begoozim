@@ -1,0 +1,55 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Design tokens — Toot Canal
+   A vintage baked-bean can label: tomato sauce, mustard and cream, with ink.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  --color-cream: #fff4dc;
+  --color-sauce: #d9441f;
+  --color-mustard: #f2b632;
+  --color-gas: #8fbf3a;
+  --color-ink: #2b1a12;
+
+  --font-display: var(--font-bagel), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+
+  --animate-hint: hint 9s ease-out forwards;
+
+  @keyframes hint {
+    0%,
+    88% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--color-ink);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-sauce);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+  }
+}

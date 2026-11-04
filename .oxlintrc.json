@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "jsx-a11y", "nextjs", "unicorn"],
+  "env": { "browser": true, "es2024": true },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/no-array-index-key": "off",
+    "unicorn/filename-case": ["error", { "case": "kebabCase" }]
+  },
+  "ignorePatterns": [".next", "node_modules", "next-env.d.ts"]
+}

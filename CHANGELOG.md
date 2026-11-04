@@ -13,6 +13,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The menu shows how many people are playing online, once there are at least two ([#28](https://github.com/friedrith/ba-ham-begoozim/pull/28)).
 - Stickers: put up to three on each bean. They show in the race, on the share card and to teammates online ([#29](https://github.com/friedrith/ba-ham-begoozim/pull/29)).
 - Harder levels have Persian scenery on the banks: a shelang, an aftabeh, a samovar, a farsh and dampayi ([#30](https://github.com/friedrith/ba-ham-begoozim/pull/30)).
+- The share button shows a spinner while the picture is being made ([#31](https://github.com/friedrith/ba-ham-begoozim/pull/31)).
 
 ### Fixed
 

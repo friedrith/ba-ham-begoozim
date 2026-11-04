@@ -29,6 +29,7 @@ function download(file: File) {
  */
 export function ShareButton({ run, t }: { run: ShareCardRun; t: Messages }) {
   const [file, setFile] = useState<File | null>(null)
+  const [drawing, setDrawing] = useState(true)
 
   useEffect(() => {
     let current = true
@@ -38,9 +39,9 @@ export function ShareButton({ run, t }: { run: ShareCardRun; t: Messages }) {
       body: fontOf('--font-sans'),
     })
     canvas.toBlob((blob) => {
-      if (current && blob) {
-        setFile(new File([blob], FILE_NAME, { type: 'image/png' }))
-      }
+      if (!current) return
+      setDrawing(false)
+      if (blob) setFile(new File([blob], FILE_NAME, { type: 'image/png' }))
     }, 'image/png')
     return () => {
       current = false
@@ -72,7 +73,16 @@ export function ShareButton({ run, t }: { run: ShareCardRun; t: Messages }) {
 
   return (
     <PanelButton disabled={!file} onClick={share}>
-      {t.result.share}
+      {/* Sits beside the label so the label doesn't move when the picture is ready. */}
+      <span className="relative">
+        {t.result.share}
+        {drawing && (
+          <span
+            aria-hidden
+            className="border-ink absolute -start-7 top-1/2 -mt-2.5 size-5 animate-spin rounded-full border-[3px] border-t-transparent motion-reduce:animate-none"
+          />
+        )}
+      </span>
     </PanelButton>
   )
 }

@@ -40,6 +40,13 @@
     overscroll-behavior: none;
   }
 
+  [lang='fa'] {
+    --font-display:
+      var(--font-lalezar), var(--font-vazirmatn), system-ui, sans-serif;
+    --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-sans);
+  }
+
   :focus-visible {
     outline: 3px solid var(--color-sauce);
     outline-offset: 2px;

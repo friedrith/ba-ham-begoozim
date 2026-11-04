@@ -5,6 +5,7 @@ import {
   type GameEvent,
   type World,
 } from '../engine/world'
+import type { Messages } from '../i18n'
 
 export type Puff = {
   x: number
@@ -37,7 +38,6 @@ export type Effects = {
 }
 
 const MAX_PUFFS = 320
-const TOOTS = ['TOOT!', 'PARP!', 'PFFT!', 'BRRT!', 'FWEEP!', 'POOT!']
 const GAS_COLORS = ['#c9d65a', '#b4c94a', '#dfe07e']
 const FIRE_COLORS = ['#ffb627', '#ff7a1a', '#ffd166']
 
@@ -103,7 +103,12 @@ function addWord(
   fx.words.push({ x, y, text, color, size, age: 0, life: 0.85 })
 }
 
-export function applyEvent(fx: Effects, world: World, event: GameEvent) {
+export function applyEvent(
+  fx: Effects,
+  world: World,
+  event: GameEvent,
+  words: Messages['fx'],
+) {
   switch (event.type) {
     case 'blast': {
       fx.squash[event.seat] = 0.25
@@ -116,21 +121,21 @@ export function applyEvent(fx: Effects, world: World, event: GameEvent) {
       )
       const s = SEATS[event.seat]
       const p = tubToWorld(world, s.lx, s.ly + -s.thrust * 58)
-      const text = TOOTS[fx.wordIndex++ % TOOTS.length]
+      const text = words.toots[fx.wordIndex++ % words.toots.length]
       if (!event.harmony) addWord(fx, p.x, p.y, text, '#fff4dc', 24)
       if (event.ignited) fx.shake = Math.max(fx.shake, 12)
       break
     }
     case 'harmony':
-      addWord(fx, world.x, world.y - 70, 'HARMONY!', '#f2b632', 34)
+      addWord(fx, world.x, world.y - 70, words.harmony, '#f2b632', 34)
       burst(fx, event.x, event.y, 10, ['#f2b632', '#fff4dc'])
       break
     case 'ignite':
-      addWord(fx, event.x, event.y - 40, 'WHOOSH!', '#ff7a1a', 38)
+      addWord(fx, event.x, event.y - 40, words.ignite, '#ff7a1a', 38)
       burst(fx, event.x, event.y, 26, FIRE_COLORS)
       break
     case 'can':
-      addWord(fx, event.x, event.y - 30, '+GAS', '#7dffb2', 26)
+      addWord(fx, event.x, event.y - 30, words.can, '#7dffb2', 26)
       burst(fx, event.x, event.y, 12, ['#fff4dc', '#e4572e', '#f2b632'])
       break
     case 'bump':
@@ -139,7 +144,7 @@ export function applyEvent(fx: Effects, world: World, event: GameEvent) {
       break
     case 'respawn':
       fx.shake = 14
-      addWord(fx, event.x, event.y - 30, 'GLUG!', '#ff6b6b', 40)
+      addWord(fx, event.x, event.y - 30, words.respawn, '#ff6b6b', 40)
       burst(fx, event.x, event.y, 30, ['#ffffff', '#cfeff0', '#e4572e'])
       break
     default:

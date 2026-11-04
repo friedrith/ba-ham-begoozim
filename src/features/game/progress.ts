@@ -26,9 +26,3 @@ export function recordRun(id: string, stars: number, time: number): Progress {
   }
   return progress
 }
-
-export function formatTime(seconds: number) {
-  const minutes = Math.floor(seconds / 60)
-  const rest = seconds - minutes * 60
-  return `${minutes}:${rest.toFixed(1).padStart(4, '0')}`
-}

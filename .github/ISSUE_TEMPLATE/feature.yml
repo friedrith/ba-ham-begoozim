@@ -1,0 +1,11 @@
+name: Suggest a feature
+description: An idea for a new level, mode or improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What's your idea?
+      description: What would you add or change, and why would it be fun?
+    validations:
+      required: true

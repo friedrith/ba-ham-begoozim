@@ -65,6 +65,19 @@ in the same physical place: the labels `ض`, `ح`, `ظ` and `پ` are the same ke
 `bun test` runs a bot through every level, so a course that can't be finished
 fails the suite. The same bot drives the demo behind the menu.
 
+## Feedback
+
+The speech bubble in the menu opens a popup that emails what players write, through
+`src/app/api/feedback/route.ts` and [Resend](https://resend.com). The Vercel
+integration sets the Resend variables; the sending domain has to be verified in
+Resend before any email goes out.
+
+| Variable              | Value                                     |
+| --------------------- | ----------------------------------------- |
+| `RESEND_API_KEY`      | Resend API key                            |
+| `RESEND_EMAIL_DOMAIN` | Verified sending domain                   |
+| `FEEDBACK_EMAIL`      | Address that receives the players' emails |
+
 ## Analytics
 
 Pageviews and game events (`level_started`, `level_finished`, `level_abandoned`)

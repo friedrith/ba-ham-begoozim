@@ -35,6 +35,7 @@ import {
 } from '../render/scene'
 import { Sound } from '../render/sound'
 import { BeanFace } from './bean-face'
+import { FeedbackPanel } from './feedback-panel'
 import {
   loadPlayerName,
   Lobby,
@@ -42,7 +43,7 @@ import {
   seatLabel,
   sessionErrorText,
 } from './lobby'
-import { Menu, Stars } from './menu'
+import { isTextField, Menu, Stars } from './menu'
 import { normalizeCode, OnlineEntry } from './online-entry'
 import { Panel, PanelButton } from './panel'
 
@@ -187,6 +188,8 @@ export function Game() {
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   const [paused, setPaused] = useState(false)
   const [muted, setMuted] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const closeFeedback = useCallback(() => setFeedbackOpen(false), [])
   const [result, setResult] = useState<Result | null>(null)
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [touchMode, setTouchMode] = useState(startsInTouchMode)
@@ -351,6 +354,7 @@ export function Game() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isTextField(event.target)) return
       soundRef.current?.unlock()
       if (
         KEY_SEATS[event.code] &&
@@ -597,10 +601,15 @@ export function Game() {
           touchMode={touchMode}
           onPlay={startLevel}
           onLocaleChange={setLocale}
+          onFeedback={() => setFeedbackOpen(true)}
           online={
             ROOMS_URL && <OnlineEntry t={t} url={ROOMS_URL} onEnter={enterRoom} />
           }
         />
+      )}
+
+      {screen.name === 'menu' && feedbackOpen && (
+        <FeedbackPanel t={t} onClose={closeFeedback} />
       )}
 
       {screen.name === 'online' && session && !inOnlineRace && !online?.error && (

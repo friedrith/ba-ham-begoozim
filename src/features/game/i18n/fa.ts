@@ -77,6 +77,7 @@ export const fa: Messages = {
   },
   shouts: {
     more: 'بیشتر بگوز!',
+    youMore: 'تو بیشتر بگوز!',
     stop: 'وایسا!',
     together: 'با هم!',
     left: 'چپ!',

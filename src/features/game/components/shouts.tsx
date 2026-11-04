@@ -17,9 +17,7 @@ export function ShoutFeed({
   return shouts.map(({ key, from, id }) => {
     const seat = room.seats.findIndex(({ owner }) => owner === from)
     const who =
-      from === room.you
-        ? t.online.you
-        : (room.seats[seat]?.name ?? t.online.player(formatNumber(from, t.locale)))
+      room.seats[seat]?.name ?? t.online.player(formatNumber(from, t.locale))
     return (
       <output
         key={key}

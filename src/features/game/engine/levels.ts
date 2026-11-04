@@ -25,7 +25,7 @@ export type LevelItem =
   | { kind: 'anar'; at: number; period: number; phase?: number }
 
 export type LevelDef = {
-  /** Also the key for this level's name, blurb and hint in `i18n/en.ts` and `i18n/fa.ts`. */
+  /** Also the key for this level's name and hint in `i18n/en.ts` and `i18n/fa.ts`. */
   id: string
   theme: Theme
   /** Seconds to beat for the time star. */

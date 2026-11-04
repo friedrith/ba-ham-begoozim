@@ -5,7 +5,7 @@ import type { AwardId } from '../tally'
 
 export type Locale = 'en' | 'fa'
 
-export type LevelText = { name: string; blurb: string; hint: string }
+export type LevelText = { name: string; hint: string }
 
 /** `key` is the letter printed on the physical key that seat uses on this layout. */
 export type SeatText = { name: string; key: string }

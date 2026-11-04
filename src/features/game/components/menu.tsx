@@ -243,10 +243,7 @@ export function Menu({
                     <h2 className="font-display text-3xl leading-tight">
                       {text.name}
                     </h2>
-                    <p className="text-ink/75 flex-1 text-sm leading-snug">
-                      {text.blurb}
-                    </p>
-                    <p className="flex justify-between gap-3 text-sm font-bold tabular-nums">
+                    <p className="mt-auto flex justify-between gap-3 text-sm font-bold tabular-nums">
                       <span>{t.menu.par(formatTime(level.par, t.locale))}</span>
                       {record && (
                         <span>

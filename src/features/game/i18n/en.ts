@@ -202,72 +202,50 @@ export const en: Messages = {
   levels: {
     'bathwater-bend': {
       name: 'Bathwater Bend',
-      blurb:
-        'Soapy, warm and forgiving. Learn to steer, and stand clear when a samovar boils.',
       hint: 'Rear beans push you forward. Blast both at once for a harmony!',
     },
     'storm-drain': {
       name: 'Storm Drain',
-      blurb:
-        'Sliding gates, spinning paddles and soggy carpets that grip the tub like mud.',
       hint: 'Front beans push you backward. Use them to brake and spin on the spot.',
     },
     'boiler-room': {
       name: 'Noruz Nightmare',
-      blurb:
-        'New year, new burns. Pilot lights give you a boost. Chaharshanbe Suri bonfires do not.',
       hint: 'Blasting next to a pilot light ignites you for a huge boost. Whoosh.',
     },
     'grout-line': {
       name: 'Grout Line',
-      blurb:
-        'Back in the bathroom, with a third less room. The urchins moved in too.',
       hint: 'Tap instead of holding. Small blasts keep you off the walls.',
     },
     'plughole-parade': {
       name: 'Ghormeh Sabzi Aftermath',
-      blurb:
-        'Everyone had seconds of ghormeh sabzi, and now every drain in the building is open. The safe line is one bathtub wide.',
       hint: 'Whirlpools drag you in and sling you sideways. Blast early, not when you are circling.',
     },
     'sewer-slalom': {
-      name: 'Sewer Slalom',
-      blurb: 'Urchins in rows, and a current that wants a word. Weave or weep.',
+      name: 'Aubgush Rapids',
       hint: 'Look past the next urchin. By the time it is close, it is too late to turn.',
     },
     'the-flue': {
       name: 'The Flue',
-      blurb: 'A chimney with ideas above its station. Narrow, furious and on fire.',
       hint: 'The current is too strong to fight on gas alone. Light every flame you can reach.',
     },
     'valve-alley': {
       name: 'Valve Alley',
-      blurb:
-        'Gate after gate after gate. Somebody up there is counting, and it is not you.',
       hint: 'Gates only look random. Watch one cycle, then ride a flame through the gap.',
     },
     'cold-snap': {
       name: 'Cold Snap',
-      blurb:
-        'Somebody left the freezer open. Icicles are dropping, and the Yalda pomegranates got loose.',
       hint: 'A shadow on the water means an icicle is coming down. Do not be under it.',
     },
     'black-ice': {
       name: 'Black Ice',
-      blurb:
-        'The water has gone hard. It turns out water was doing most of the steering.',
       hint: 'On ice the tub keeps sliding the way it was going. Brake early and turn late.',
     },
     'frostbite-flume': {
       name: 'Frostbite Flume',
-      blurb:
-        'Ice underneath, icicles overhead, and a gate at the bottom for the survivors.',
       hint: 'A front bean on the ice can save you, as long as somebody remembers it exists.',
     },
     'the-last-drop': {
       name: 'The Last Drop',
-      blurb:
-        'Every hazard in the building, one narrow pipe, and no gas to spare. Good luck, beans.',
       hint: 'Nothing new here. Everything you already hate, all at once.',
     },
   },

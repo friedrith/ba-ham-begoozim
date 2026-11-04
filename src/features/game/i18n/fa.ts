@@ -83,7 +83,6 @@ export const fa: Messages = {
     menu: 'منو',
     rank: (rank) => `لقب فعلی: ${rank}`,
     rankUp: (rank) => `لقب جدید: ${rank}!`,
-    trophyUnlocked: (trophy) => `همهٔ کانال‌ها رو رد کردید. ${trophy} مال شماست!`,
     share: 'مدرک رو بفرست',
   },
   ranks: {
@@ -93,7 +92,6 @@ export const fa: Messages = {
     duke: 'خان گاز',
     king: 'شاه گوز',
   },
-  trophy: 'دودول طلایی',
   stickers: {
     open: 'استیکرها',
     title: 'بچسبون',

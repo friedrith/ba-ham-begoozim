@@ -7,7 +7,6 @@ import {
   MessageSquarePlus,
   Star,
   Sticker,
-  Trophy,
 } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
@@ -19,13 +18,7 @@ import {
   type Locale,
   type Messages,
 } from '../i18n'
-import {
-  hasTrophy,
-  MAX_STARS,
-  rankFor,
-  totalStars,
-  type Progress,
-} from '../progress'
+import { MAX_STARS, rankFor, totalStars, type Progress } from '../progress'
 import type { BeanStickers } from '../stickers'
 import { BeanFace } from './bean-face'
 import { LevelPreview } from './level-preview'
@@ -321,15 +314,6 @@ export function Menu({
               <p className="font-display text-sauce text-lg leading-none">
                 {t.ranks[rankFor(stars)]}
               </p>
-              {hasTrophy(progress) && (
-                <p className="font-display flex items-center gap-1 leading-none">
-                  <Trophy
-                    aria-hidden="true"
-                    className="fill-mustard text-ink size-4"
-                  />
-                  {t.trophy}
-                </p>
-              )}
             </div>
 
             <button

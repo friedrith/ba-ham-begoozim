@@ -91,14 +91,11 @@ export type Messages = {
     menu: string
     rank: (rank: string) => string
     rankUp: (rank: string) => string
-    trophyUnlocked: (trophy: string) => string
     /** Shown on the button once the picture of the result is ready. */
     share: string
   }
   /** Earned by total stars, lowest first. */
   ranks: Record<RankId, string>
-  /** A secret, earned by finishing every level. Only its owner ever sees the name. */
-  trophy: string
   /** One goes to each bean at the end of a race. `detail` gets the winning score. */
   stickers: {
     /** On the buttons that open the sticker panel. */

@@ -2,6 +2,8 @@ import { SAMPLE_SPACING } from './course'
 import {
   forwardOf,
   gateBar,
+  ICICLE_RADIUS,
+  icicleLanding,
   paddleBar,
   urchinPosition,
   type Gate,
@@ -24,6 +26,8 @@ const WALL_CLEARANCE = 36
 /** Reach from the middle of the tub to anything lethal it might clip. */
 const URCHIN_REACH = 80
 const BAR_REACH = 34
+const ICICLE_REACH = ICICLE_RADIUS + 66
+const ICICLE_MARGIN = 0.5
 const SWALLOW_REACH = 60
 const TUB_HALF_LENGTH = 62
 const BLOCKED = 100
@@ -37,6 +41,7 @@ const CREEP_SPEED = 70
 const FATAL = 1000
 const CAN_BONUS = 10
 const ACCELERATION = 800
+const ICE_WARNING = 12
 const DASH_SPEED = 260
 const PATIENCE = 5
 const RISK_RANGE = 16
@@ -79,7 +84,10 @@ function distanceToBar(
   const aby = bar.by - bar.ay
   const t = Math.max(
     0,
-    Math.min(1, ((x - bar.ax) * abx + (y - bar.ay) * aby) / (abx * abx + aby * aby)),
+    Math.min(
+      1,
+      ((x - bar.ax) * abx + (y - bar.ay) * aby) / (abx * abx + aby * aby),
+    ),
   )
   return Math.hypot(bar.ax + abx * t - x, bar.ay + aby * t - y)
 }
@@ -88,7 +96,10 @@ function distanceToBar(
 function gatePosition(gate: Gate, x: number, y: number) {
   const dx = gate.x - x
   const dy = gate.y - y
-  return { across: -dx * gate.nx - dy * gate.ny, ahead: dx * gate.ny - dy * gate.nx }
+  return {
+    across: -dx * gate.nx - dy * gate.ny,
+    ahead: dx * gate.ny - dy * gate.nx,
+  }
 }
 
 /** The width of the gap between a gate's bar and the wall on one side. */
@@ -106,7 +117,8 @@ function nearestGate(world: World) {
   for (const gate of world.gates) {
     const { ahead } = gatePosition(gate, world.x, world.y)
     if (ahead < -TUB_HALF_LENGTH || ahead >= nearestAhead) continue
-    if (Math.hypot(gate.x - world.x, gate.y - world.y) > GATE_SIGHT + gate.hw) continue
+    if (Math.hypot(gate.x - world.x, gate.y - world.y) > GATE_SIGHT + gate.hw)
+      continue
     nearest = gate
     nearestAhead = ahead
   }
@@ -146,6 +158,7 @@ function nearbyHazards(world: World) {
     Math.hypot(p.x - world.x, p.y - world.y) < SIGHT
   return {
     urchins: world.urchins.filter(near),
+    icicles: world.icicles.filter(near),
     whirls: world.whirls.filter(near),
     gates: world.gates.filter(near).map((gate) => ({
       gate,
@@ -159,31 +172,39 @@ function nearbyHazards(world: World) {
 type Hazards = ReturnType<typeof nearbyHazards>
 
 /** What it would cost to have the tub at this spot at this moment. */
-function spotCost(world: Hazards, x: number, y: number, clock: number) {
+function spotCost(hazards: Hazards, x: number, y: number, clock: number) {
   let cost = 0
-  for (const urchin of world.urchins) {
+  for (const urchin of hazards.urchins) {
     const p = urchinPosition(urchin, clock)
     const d = Math.hypot(p.x - x, p.y - y)
     if (d < URCHIN_REACH) cost += FATAL
     else if (d < URCHIN_REACH + 40) cost += (URCHIN_REACH + 40 - d) * 0.6
   }
-  for (const whirl of world.whirls) {
+  for (const icicle of hazards.icicles) {
+    const d = Math.hypot(icicle.x - x, icicle.y - y)
+    if (d > ICICLE_REACH) continue
+    // Timing guesses are rough, so stay clear either side of the moment it lands.
+    const landing = icicleLanding(icicle, clock)
+    if (landing < ICICLE_MARGIN || landing > icicle.period - ICICLE_MARGIN)
+      cost += FATAL
+  }
+  for (const whirl of hazards.whirls) {
     const d = Math.hypot(whirl.x - x, whirl.y - y)
     if (d < SWALLOW_REACH) cost += FATAL
     else if (d < whirl.radius) cost += (1 - d / whirl.radius) * whirl.pull * 0.2
   }
-  for (const { gate, side } of world.gates) {
+  for (const { gate, side } of hazards.gates) {
     const { across, ahead } = gatePosition(gate, x, y)
     // Being lined up by the time the tub reaches its holding spot is the whole trick.
     if (ahead < -TUB_HALF_LENGTH - BAR_REACH || ahead > HOLD_AT + 40) continue
     const fromGap = Math.abs(across - side * gate.hw * 0.62)
     if (fromGap > gate.hw * 0.38 - 20) cost += OFF_THE_GAP
   }
-  for (const paddle of world.paddles) {
+  for (const paddle of hazards.paddles) {
     if (Math.hypot(paddle.x - x, paddle.y - y) > paddle.length + BAR_REACH) continue
     if (paddleClearance(paddle, clock, x, y) < BAR_REACH) cost += BLOCKED
   }
-  for (const can of world.cans) {
+  for (const can of hazards.cans) {
     if (Math.hypot(can.x - x, can.y - y) < 44) cost -= CAN_BONUS
   }
   return cost
@@ -278,11 +299,23 @@ function cruiseSpeed(world: World) {
     const s = samples[Math.min(samples.length - 1, world.sampleIndex + i)]
     bend = Math.max(
       bend,
-      Math.abs(Math.atan2(here.tx * s.ty - here.ty * s.tx, here.tx * s.tx + here.ty * s.ty)),
+      Math.abs(
+        Math.atan2(
+          here.tx * s.ty - here.ty * s.tx,
+          here.tx * s.tx + here.ty * s.ty,
+        ),
+      ),
     )
     narrowest = Math.min(narrowest, s.hw)
   }
-  return Math.max(110, narrowest * 2 * (1 - Math.min(bend, 1.4) / 2.2))
+  const speed = Math.max(110, narrowest * 2 * (1 - Math.min(bend, 1.4) / 2.2))
+  // Ice gives no grip to turn with, so anything ice-bound goes in slower.
+  const iceAhead = world.ice.some(
+    (sheet) =>
+      world.sampleIndex + ICE_WARNING >= sheet.from &&
+      world.sampleIndex <= sheet.to,
+  )
+  return iceAhead ? speed * 0.7 : speed
 }
 
 function replan(world: World, previous?: Plan): Plan {
@@ -370,10 +403,12 @@ export function autopilot(world: World): boolean[] {
   const f = forwardOf(world.angle)
   const speed = world.vx * f.x + world.vy * f.y
   const tapping = (a: number, b: number) => {
-    const since = world.clock - Math.max(world.seats[a].lastPress, world.seats[b].lastPress)
+    const since =
+      world.clock - Math.max(world.seats[a].lastPress, world.seats[b].lastPress)
     return since < TAP_LENGTH || since >= TAP_EVERY
   }
-  const tooFast = speed > (plan.speed < 0 ? plan.speed * 0.4 : plan.speed + BRAKE_DEADBAND)
+  const tooFast =
+    speed > (plan.speed < 0 ? plan.speed * 0.4 : plan.speed + BRAKE_DEADBAND)
   const tooSlow =
     speed <
     (plan.speed > 0

@@ -15,6 +15,7 @@ const KICK_GAS = 0.1
 const HOLD_GAS = 0.32
 const REGEN_GAS = 0.2
 const CAN_GAS = 0.4
+const ICICLE_EARSHOT = 800
 
 const SYNC_WINDOW = 0.14
 const HARMONY_KICK = 1.5
@@ -22,8 +23,16 @@ const HARMONY_GAS = 0.06
 const IGNITE_KICK = 3.2
 const FLAME_RADIUS = 120
 
+/** On ice the tub keeps its momentum and hardly grips the water at all. */
+const ICE_FORWARD_DRAG = 0.25
+const ICE_LATERAL_DRAG = 0.5
+const ICE_ANGULAR_DRAG = 1.5
+
 export const CAN_RADIUS = 16
 export const URCHIN_RADIUS = 22
+export const ICICLE_RADIUS = 46
+/** Seconds of shadow on the water before an icicle lands. */
+export const ICICLE_WARNING = 1.3
 const SWALLOW_RADIUS = 18
 const HULL_RADIUS = 32
 const HULL_OFFSETS = [-30, 0, 30]
@@ -63,6 +72,9 @@ export type GameEvent =
   | { type: 'checkpoint' }
   | { type: 'respawn'; x: number; y: number }
   | { type: 'finish' }
+  | { type: 'creak' }
+  | { type: 'smash'; x: number; y: number }
+  | { type: 'skid'; x: number; y: number }
 
 export type Can = { x: number; y: number; taken: boolean }
 export type Urchin = { x: number; y: number; orbit: number; speed: number }
@@ -79,6 +91,16 @@ export type Gate = {
 export type Paddle = { x: number; y: number; length: number; speed: number }
 export type Current = { from: number; to: number; strength: number }
 export type Flame = { x: number; y: number; cooldown: number }
+export type Icicle = {
+  x: number
+  y: number
+  period: number
+  phase: number
+  /** How many times it has dropped, so each drop only lands and warns once. */
+  landed: number
+  warned: number
+}
+export type IceSheet = { from: number; to: number }
 
 export type World = {
   level: LevelDef
@@ -91,6 +113,9 @@ export type World = {
   paddles: Paddle[]
   currents: Current[]
   flames: Flame[]
+  icicles: Icicle[]
+  ice: IceSheet[]
+  onIce: boolean
   x: number
   y: number
   vx: number
@@ -132,6 +157,9 @@ export function createWorld(level: LevelDef): World {
     paddles: [],
     currents: [],
     flames: [],
+    icicles: [],
+    ice: [],
+    onIce: false,
     x: 0,
     y: 0,
     vx: 0,
@@ -169,6 +197,13 @@ export function createWorld(level: LevelDef): World {
       })
       continue
     }
+    if (item.kind === 'ice') {
+      world.ice.push({
+        from: indexAt(course, item.from),
+        to: indexAt(course, item.to),
+      })
+      continue
+    }
     if (item.kind === 'gate') {
       const s = course.samples[indexAt(course, item.at)]
       world.gates.push({
@@ -194,6 +229,16 @@ export function createWorld(level: LevelDef): World {
       world.paddles.push({ x, y, length: item.length, speed: item.speed })
     }
     if (item.kind === 'flame') world.flames.push({ x, y, cooldown: 0 })
+    if (item.kind === 'icicle') {
+      world.icicles.push({
+        x,
+        y,
+        period: item.period,
+        phase: item.phase ?? 0,
+        landed: 0,
+        warned: 0,
+      })
+    }
   }
 
   placeAt(world, world.checkpoint)
@@ -260,6 +305,12 @@ export function paddleBar(paddle: Paddle, clock: number) {
     bx: paddle.x + dx,
     by: paddle.y + dy,
   }
+}
+
+/** Seconds until an icicle next lands. */
+export function icicleLanding(icicle: Icicle, clock: number) {
+  const elapsed = (clock + icicle.phase) % icicle.period
+  return icicle.period - elapsed
 }
 
 function push(world: World, seatIndex: number, amount: number) {
@@ -344,14 +395,22 @@ function updateSeats(world: World, held: readonly boolean[], dt: number) {
 }
 
 function applyWater(world: World, dt: number) {
+  const onIce = world.ice.some(
+    (sheet) => world.sampleIndex >= sheet.from && world.sampleIndex <= sheet.to,
+  )
+  if (onIce && !world.onIce) {
+    world.events.push({ type: 'skid', x: world.x, y: world.y })
+  }
+  world.onIce = onIce
+
   const f = forwardOf(world.angle)
   const along = world.vx * f.x + world.vy * f.y
   const side = -world.vx * f.y + world.vy * f.x
-  const newAlong = along * Math.exp(-FORWARD_DRAG * dt)
-  const newSide = side * Math.exp(-LATERAL_DRAG * dt)
+  const newAlong = along * Math.exp(-(onIce ? ICE_FORWARD_DRAG : FORWARD_DRAG) * dt)
+  const newSide = side * Math.exp(-(onIce ? ICE_LATERAL_DRAG : LATERAL_DRAG) * dt)
   world.vx = f.x * newAlong - f.y * newSide
   world.vy = f.y * newAlong + f.x * newSide
-  world.spin *= Math.exp(-ANGULAR_DRAG * dt)
+  world.spin *= Math.exp(-(onIce ? ICE_ANGULAR_DRAG : ANGULAR_DRAG) * dt)
 
   const s = world.course.samples[world.sampleIndex]
   for (const current of world.currents) {
@@ -484,6 +543,35 @@ function collideHazards(world: World) {
   }
 }
 
+function hullWithin(world: World, x: number, y: number, reach: number) {
+  return HULL_OFFSETS.some((offset) => {
+    const c = tubToWorld(world, 0, offset)
+    return Math.hypot(c.x - x, c.y - y) < reach
+  })
+}
+
+function updateIcicles(world: World) {
+  for (const icicle of world.icicles) {
+    const drop = Math.floor((world.clock + icicle.phase) / icicle.period)
+    // Only icicles close enough to see make a sound or a splash.
+    const near = Math.hypot(icicle.x - world.x, icicle.y - world.y) < ICICLE_EARSHOT
+    if (
+      icicleLanding(icicle, world.clock) < ICICLE_WARNING &&
+      icicle.warned <= drop
+    ) {
+      icicle.warned = drop + 1
+      if (near) world.events.push({ type: 'creak' })
+    }
+    if (drop <= icicle.landed) continue
+    icicle.landed = drop
+    if (near) world.events.push({ type: 'smash', x: icicle.x, y: icicle.y })
+    const reach = HULL_RADIUS + ICICLE_RADIUS - 6
+    if (world.grace <= 0 && hullWithin(world, icicle.x, icicle.y, reach)) {
+      wipeout(world)
+    }
+  }
+}
+
 function collectCans(world: World) {
   for (const can of world.cans) {
     if (can.taken) continue
@@ -572,6 +660,7 @@ export function stepWorld(world: World, held: readonly boolean[], dt = STEP) {
 
   collideWalls(world)
   collideHazards(world)
+  updateIcicles(world)
   collectCans(world)
   updateProgress(world)
 }

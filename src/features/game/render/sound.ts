@@ -1,4 +1,4 @@
-import type { GameEvent } from '../engine/world'
+import { ICICLE_WARNING, type GameEvent } from '../engine/world'
 
 /** Each bean holds one note of a major chord, so a harmony really is a chord. */
 const SEAT_NOTES = [130.81, 164.81, 196, 261.63]
@@ -68,6 +68,19 @@ export class Sound {
       case 'can':
         this.tone(880, 1320, 0.12, 'triangle', 0.2)
         this.tone(1320, 1760, 0.14, 'triangle', 0.14, 0.08)
+        break
+      case 'creak':
+        this.tone(1400, 520, ICICLE_WARNING, 'sine', 0.05)
+        this.tone(1450, 540, ICICLE_WARNING, 'triangle', 0.03)
+        break
+      case 'smash':
+        this.whoosh(0.3, 6000)
+        this.tone(2400, 1200, 0.1, 'square', 0.05)
+        this.tone(1800, 700, 0.18, 'triangle', 0.09, 0.03)
+        break
+      case 'skid':
+        this.whoosh(0.5, 9000)
+        this.tone(900, 1300, 0.3, 'sine', 0.06)
         break
       case 'bump':
         this.tone(110, 50, 0.16, 'sine', Math.min(0.5, event.force / 400))
@@ -157,7 +170,8 @@ export class Sound {
     }
   }
 
-  private whoosh() {
+  /** A burst of filtered noise that falls away. */
+  private whoosh(duration = 0.7, brightness = 3000) {
     const { ctx, master, noise } = this
     if (!ctx || !master || !noise) return
     const now = ctx.currentTime
@@ -165,14 +179,14 @@ export class Sound {
     source.buffer = noise
     const filter = ctx.createBiquadFilter()
     filter.type = 'lowpass'
-    filter.frequency.setValueAtTime(3000, now)
-    filter.frequency.exponentialRampToValueAtTime(200, now + 0.7)
+    filter.frequency.setValueAtTime(brightness, now)
+    filter.frequency.exponentialRampToValueAtTime(200, now + duration)
     const gain = ctx.createGain()
     gain.gain.setValueAtTime(0.6, now)
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration)
     source.connect(filter).connect(gain).connect(master)
     source.start(now)
-    source.stop(now + 0.7)
+    source.stop(now + duration)
   }
 
   private tone(

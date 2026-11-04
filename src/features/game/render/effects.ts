@@ -40,6 +40,7 @@ const MAX_PUFFS = 320
 const TOOTS = ['TOOT!', 'PARP!', 'PFFT!', 'BRRT!', 'FWEEP!', 'POOT!']
 const GAS_COLORS = ['#c9d65a', '#b4c94a', '#dfe07e']
 const FIRE_COLORS = ['#ffb627', '#ff7a1a', '#ffd166']
+const ICE_COLORS = ['#ffffff', '#d6f0fb', '#a8dcf2']
 
 export function createEffects(): Effects {
   return { puffs: [], words: [], shake: 0, squash: [0, 0, 0, 0], wordIndex: 0 }
@@ -136,6 +137,15 @@ export function applyEvent(fx: Effects, world: World, event: GameEvent) {
     case 'bump':
       fx.shake = Math.max(fx.shake, Math.min(10, event.force / 22))
       burst(fx, event.x, event.y, 6, ['#ffffff', '#cfeff0'])
+      break
+    case 'smash':
+      fx.shake = Math.max(fx.shake, 5)
+      addWord(fx, event.x, event.y - 30, 'CRASH!', '#d6f0fb', 32)
+      burst(fx, event.x, event.y, 22, ICE_COLORS)
+      break
+    case 'skid':
+      addWord(fx, event.x, event.y - 50, 'WHEEE!', '#d6f0fb', 28)
+      burst(fx, event.x, event.y, 10, ICE_COLORS)
       break
     case 'respawn':
       fx.shake = 14

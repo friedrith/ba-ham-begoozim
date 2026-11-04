@@ -1,8 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 
 import { autopilot } from './autopilot'
-import { LEVELS } from './levels'
-import { createWorld, forwardOf, STEP, stepWorld, type World } from './world'
+import { buildCourse, indexAt } from './course'
+import { LEVELS, type LevelDef } from './levels'
+import {
+  createWorld,
+  forwardOf,
+  ICICLE_WARNING,
+  icicleLanding,
+  STEP,
+  stepWorld,
+  type World,
+} from './world'
 
 const FRONT_LEFT = 0
 const REAR_LEFT = 2
@@ -103,7 +112,141 @@ describe('wipeouts', () => {
   })
 })
 
+function worldWith(items: LevelDef['items']) {
+  const world = createWorld({
+    id: 'test',
+    name: 'Test',
+    blurb: '',
+    hint: '',
+    theme: 'frost',
+    par: 10,
+    path: [
+      [0, 0, 200],
+      [0, -1000, 200],
+      [0, -2000, 200],
+    ],
+    checkpoints: [],
+    items,
+  })
+  while (world.status === 'countdown') stepWorld(world, [])
+  world.events.length = 0
+  return world
+}
+
+describe('icicles', () => {
+  test('warns before landing and only hurts at the moment it lands', () => {
+    const world = worldWith([{ kind: 'icicle', at: 0.1, period: 6 }])
+    const icicle = world.icicles[0]
+    world.x = icicle.x
+    world.y = icicle.y
+    world.sampleIndex = indexAt(world.course, 0.1)
+
+    while (icicleLanding(icicle, world.clock) > ICICLE_WARNING + 0.1) {
+      world.x = icicle.x
+      world.y = icicle.y
+      press(world)
+    }
+    expect(world.wipeouts).toBe(0)
+    expect(world.events.some((e) => e.type === 'creak')).toBe(false)
+
+    let landed = false
+    while (!landed) {
+      world.x = icicle.x
+      world.y = icicle.y
+      world.vx = 0
+      world.vy = 0
+      press(world)
+      landed = world.events.some((e) => e.type === 'smash')
+    }
+    expect(world.events.some((e) => e.type === 'creak')).toBe(true)
+    expect(world.wipeouts).toBe(1)
+  })
+
+  test('misses a tub that got out of the way', () => {
+    const world = worldWith([{ kind: 'icicle', at: 0.3, period: 6 }])
+    for (let t = 0; t < 8; t += STEP) press(world)
+    expect(world.wipeouts).toBe(0)
+  })
+})
+
+function coastingSpeed(items: LevelDef['items']) {
+  const world = worldWith(items)
+  world.vy = -200
+  for (let t = 0; t < 1; t += STEP) press(world)
+  return Math.hypot(world.vx, world.vy)
+}
+
+describe('ice', () => {
+  test('keeps the tub sliding far longer than water does', () => {
+    const onIce = coastingSpeed([{ kind: 'ice', from: 0, to: 1 }])
+    expect(onIce).toBeGreaterThan(coastingSpeed([]) * 1.5)
+  })
+
+  test('skids once on the way onto a sheet', () => {
+    const world = worldWith([{ kind: 'ice', from: 0.2, to: 0.9 }])
+    const onSheet = world.course.samples[indexAt(world.course, 0.5)]
+    world.x = onSheet.x
+    world.y = onSheet.y
+    world.sampleIndex = indexAt(world.course, 0.5)
+    press(world)
+    press(world)
+    expect(world.events.filter((e) => e.type === 'skid')).toHaveLength(1)
+  })
+})
+
+function measureLevel(level: LevelDef) {
+  const { samples } = buildCourse(level.path)
+  const length = samples.length * 24
+  const hazards = level.items.filter((item) => item.kind !== 'can').length
+  return {
+    width: samples.reduce((sum, s) => sum + s.hw, 0) / samples.length,
+    hazardsPerKm: (hazards / length) * 1000,
+    kinds: new Set(level.items.map((item) => item.kind)).size,
+  }
+}
+
 describe('levels', () => {
+  test('ids are unique, because progress is saved against them', () => {
+    expect(new Set(LEVELS.map((level) => level.id)).size).toBe(LEVELS.length)
+  })
+
+  test('the last level is clearly harder than The Boiler Room', () => {
+    const boiler = measureLevel(LEVELS.find((level) => level.id === 'boiler-room')!)
+    const last = measureLevel(LEVELS[LEVELS.length - 1])
+    expect(last.width).toBeLessThan(boiler.width * 0.8)
+    expect(last.hazardsPerKm).toBeGreaterThan(boiler.hazardsPerKm * 1.5)
+    expect(last.kinds).toBeGreaterThan(boiler.kinds)
+  })
+
+  for (const level of LEVELS) {
+    test(`${level.name} stays fair`, () => {
+      const { samples } = buildCourse(level.path)
+      const world = createWorld(level)
+      // Wide enough for the tub, which is 124 long and 64 wide, to turn around.
+      expect(Math.min(...samples.map((s) => s.hw))).toBeGreaterThanOrEqual(100)
+      // Channels mustn't run into each other, or the walls stop making sense.
+      for (let i = 0; i < samples.length; i += 2) {
+        for (let j = i + 30; j < samples.length; j += 2) {
+          const a = samples[i]
+          const b = samples[j]
+          expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThan(a.hw + b.hw)
+        }
+      }
+      for (const gate of world.gates) {
+        // Its widest gap has to let the hull through with a little to spare.
+        expect(gate.hw * 0.76).toBeGreaterThanOrEqual(84)
+      }
+      // Nothing sits on a respawn point, which would feel like a cheap shot.
+      const lethal = [...world.urchins, ...world.icicles, ...world.whirls]
+      for (const index of [...world.checkpoints, 6]) {
+        const s = samples[index]
+        for (const hazard of lethal) {
+          expect(Math.hypot(hazard.x - s.x, hazard.y - s.y)).toBeGreaterThan(110)
+        }
+      }
+    })
+  }
+
   for (const level of LEVELS) {
     test(`${level.name} can be finished`, () => {
       const world = createWorld(level)

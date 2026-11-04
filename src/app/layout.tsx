@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Bagel_Fat_One, Nunito } from 'next/font/google'
+import { Bagel_Fat_One, Lalezar, Nunito, Vazirmatn } from 'next/font/google'
 import type { ReactNode } from 'react'
 
 import './globals.css'
@@ -15,6 +15,22 @@ const nunito = Nunito({
   subsets: ['latin'],
   variable: '--font-nunito',
   display: 'swap',
+})
+
+// Persian text only. Without a preload, English players download them only if they're used.
+const lalezar = Lalezar({
+  subsets: ['arabic'],
+  weight: '400',
+  variable: '--font-lalezar',
+  display: 'swap',
+  preload: false,
+})
+
+const vazirmatn = Vazirmatn({
+  subsets: ['arabic'],
+  variable: '--font-vazirmatn',
+  display: 'swap',
+  preload: false,
 })
 
 export const metadata: Metadata = {
@@ -33,7 +49,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${bagel.variable} ${nunito.variable}`}>
+    <html
+      lang="en"
+      className={`${bagel.variable} ${nunito.variable} ${lalezar.variable} ${vazirmatn.variable}`}
+    >
       <body>{children}</body>
     </html>
   )

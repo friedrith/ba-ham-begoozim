@@ -115,9 +115,6 @@ describe('wipeouts', () => {
 function worldWith(items: LevelDef['items']) {
   const world = createWorld({
     id: 'test',
-    name: 'Test',
-    blurb: '',
-    hint: '',
     theme: 'frost',
     par: 10,
     path: [
@@ -219,7 +216,7 @@ describe('levels', () => {
   })
 
   for (const level of LEVELS) {
-    test(`${level.name} stays fair`, () => {
+    test(`${level.id} stays fair`, () => {
       const { samples } = buildCourse(level.path)
       const world = createWorld(level)
       // Wide enough for the tub, which is 124 long and 64 wide, to turn around.
@@ -248,7 +245,7 @@ describe('levels', () => {
   }
 
   for (const level of LEVELS) {
-    test(`${level.name} can be finished`, () => {
+    test(`${level.id} can be finished`, () => {
       const world = createWorld(level)
       let steps = 0
       const limit = 240 / STEP
@@ -257,7 +254,7 @@ describe('levels', () => {
         steps++
       }
       console.log(
-        `${level.name}: ${world.raceTime.toFixed(1)}s (par ${level.par}), ` +
+        `${level.id}: ${world.raceTime.toFixed(1)}s (par ${level.par}), ` +
           `${world.cansTaken}/${world.cans.length} cans, ` +
           `${world.wipeouts} wipeouts, ${world.harmonies} harmonies`,
       )

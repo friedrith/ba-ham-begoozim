@@ -7,7 +7,7 @@ Listed in the order we plan to build them.
 Put the game online under the `interaction-dynamics` Vercel account.
 
 - [x] Create the project under `interaction-dynamics` and link it to this repo
-- [ ] Deploy `master` to production and each PR to a preview URL
+- [x] Deploy `master` to production and each PR to a preview URL
 - [x] Add the live URL to the README
 
 **Done when** merging to `master` updates the live game without manual steps.
@@ -16,10 +16,10 @@ Put the game online under the `interaction-dynamics` Vercel account.
 
 Nothing checks a PR today. The scripts already exist, so this only needs wiring.
 
-- [ ] Run on every PR and on pushes to `master`, using Bun
-- [ ] Run `bun run ci` (lint and format check), `bun run typecheck`, `bun test`
+- [x] Run on every PR and on pushes to `master`, using Bun
+- [x] Run `bun run ci` (lint and format check), `bun run typecheck`, `bun test`
       and `bun run build`
-- [ ] Make the checks required before merging to `master`
+- [x] Make the checks required before merging to `master`
 
 Deployment stays with Vercel. Actions only checks the code.
 
@@ -48,11 +48,11 @@ least one level uses a theme and a hazard that don't exist today.
 Four corner pads already exist, but they are small, always visible, and labelled
 with keyboard keys. The goal is a version that feels made for a shared tablet.
 
-- [ ] Detect a touch screen and turn on touch mode only then
-- [ ] In touch mode, touching a screen corner triggers that bean's blast, with a
+- [x] Detect a touch screen and turn on touch mode only then
+- [x] In touch mode, touching a screen corner triggers that bean's blast, with a
       tap target large enough for four people sharing one iPad
-- [ ] Hide the keyboard labels and adapt the menu hints in touch mode
-- [ ] Keep the current layout on devices without a touch screen
+- [x] Hide the keyboard labels and adapt the menu hints in touch mode
+- [x] Keep the current layout on devices without a touch screen
 - [ ] Test on a real iPad: four simultaneous touches, sound unlocking on first
       touch, no page zoom or scroll, portrait and landscape
 
@@ -88,14 +88,14 @@ a normal internet connection.
 
 Offer the whole game in Persian alongside English.
 
-- [ ] Move all player-facing text into translation files, including level names,
+- [x] Move all player-facing text into translation files, including level names,
       blurbs and hints from `engine/levels.ts`
 - [ ] Translate into Persian and have a native speaker review the humour
-- [ ] Pick the language from the browser, with a switcher that remembers the choice
-- [ ] Support right-to-left layout in the menu, HUD and panels, and add a Persian
+- [x] Pick the language from the browser, with a switcher that remembers the choice
+- [x] Support right-to-left layout in the menu, HUD and panels, and add a Persian
       font that suits the game's style
-- [ ] Show numbers such as times and pars in Persian digits
-- [ ] Keep the on-screen key labels matching the keys players must press on a
+- [x] Show numbers such as times and pars in Persian digits
+- [x] Keep the on-screen key labels matching the keys players must press on a
       Persian keyboard (input already uses physical key positions)
 
 **Done when** a Persian speaker can play from the menu to the last level without

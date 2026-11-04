@@ -14,10 +14,8 @@ export type LevelItem =
   | { kind: 'ice'; from: number; to: number }
 
 export type LevelDef = {
+  /** Also the key for this level's name, blurb and hint in `i18n/en.ts` and `i18n/fa.ts`. */
   id: string
-  name: string
-  blurb: string
-  hint: string
   theme: Theme
   /** Seconds to beat for the time star. */
   par: number
@@ -30,9 +28,6 @@ export type LevelDef = {
 export const LEVELS: readonly LevelDef[] = [
   {
     id: 'bathwater-bend',
-    name: 'Bathwater Bend',
-    blurb: 'Soapy, warm and forgiving. Learn to steer before anyone gets hurt.',
-    hint: 'Rear beans push you forward. Blast both at once for a harmony!',
     theme: 'tile',
     par: 45,
     path: [
@@ -68,9 +63,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'storm-drain',
-    name: 'Storm Drain',
-    blurb: 'Sliding gates, spinning paddles and a current with a grudge.',
-    hint: 'Front beans push you backward. Use them to brake and spin on the spot.',
     theme: 'brick',
     par: 75,
     path: [
@@ -111,9 +103,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'boiler-room',
-    name: 'The Boiler Room',
-    blurb: 'Open flames and open plumbing. Blast near a flame and hold on tight.',
-    hint: 'Blasting next to a pilot light ignites you for a huge boost. Whoosh.',
     theme: 'iron',
     par: 50,
     path: [
@@ -157,10 +146,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'grout-line',
-    name: 'Grout Line',
-    blurb:
-      'Back in the bathroom, with a third less room. The urchins moved in too.',
-    hint: 'Tap instead of holding. Small blasts keep you off the walls.',
     theme: 'tile',
     par: 48,
     path: [
@@ -203,10 +188,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'plughole-parade',
-    name: 'Plughole Parade',
-    blurb:
-      'Every drain in the building is open. The safe line is one bathtub wide.',
-    hint: 'Whirlpools drag you in and sling you sideways. Blast early, not when you are circling.',
     theme: 'brick',
     par: 50,
     path: [
@@ -254,9 +235,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'sewer-slalom',
-    name: 'Sewer Slalom',
-    blurb: 'Urchins in rows, and a current that wants a word. Weave or weep.',
-    hint: 'Look past the next urchin. By the time it is close, it is too late to turn.',
     theme: 'brick',
     par: 50,
     path: [
@@ -304,9 +282,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'the-flue',
-    name: 'The Flue',
-    blurb: 'A chimney with ideas above its station. Narrow, furious and on fire.',
-    hint: 'The current is too strong to fight on gas alone. Light every flame you can reach.',
     theme: 'iron',
     par: 58,
     path: [
@@ -356,10 +331,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'valve-alley',
-    name: 'Valve Alley',
-    blurb:
-      'Gate after gate after gate. Somebody up there is counting, and it is not you.',
-    hint: 'Gates only look random. Watch one cycle, then ride a flame through the gap.',
     theme: 'iron',
     par: 75,
     path: [
@@ -409,10 +380,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'cold-snap',
-    name: 'Cold Snap',
-    blurb:
-      'Somebody left the freezer open. The ceiling is starting to drop things.',
-    hint: 'A shadow on the water means an icicle is coming down. Do not be under it.',
     theme: 'frost',
     par: 34,
     path: [
@@ -459,10 +426,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'black-ice',
-    name: 'Black Ice',
-    blurb:
-      'The water has gone hard. It turns out water was doing most of the steering.',
-    hint: 'On ice the tub keeps sliding the way it was going. Brake early and turn late.',
     theme: 'frost',
     par: 42,
     path: [
@@ -507,10 +470,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'frostbite-flume',
-    name: 'Frostbite Flume',
-    blurb:
-      'Ice underneath, icicles overhead, and a gate at the bottom for the survivors.',
-    hint: 'A front bean on the ice can save you, as long as somebody remembers it exists.',
     theme: 'frost',
     par: 54,
     path: [
@@ -560,10 +519,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'the-last-drop',
-    name: 'The Last Drop',
-    blurb:
-      'Every hazard in the building, one narrow pipe, and no gas to spare. Good luck, beans.',
-    hint: 'Nothing new here. Everything you already hate, all at once.',
     theme: 'frost',
     par: 88,
     path: [

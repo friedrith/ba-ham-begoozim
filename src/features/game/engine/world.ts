@@ -45,10 +45,10 @@ const START_INDEX = 6
 
 /** Seats mirror the keyboard corners: Q, P up top and Z, M along the bottom. */
 export const SEATS = [
-  { name: 'Front left', key: 'Q', lx: -17, ly: 30, thrust: -1 },
-  { name: 'Front right', key: 'P', lx: 17, ly: 30, thrust: -1 },
-  { name: 'Rear left', key: 'Z', lx: -17, ly: -30, thrust: 1 },
-  { name: 'Rear right', key: 'M', lx: 17, ly: -30, thrust: 1 },
+  { lx: -17, ly: 30, thrust: -1 },
+  { lx: 17, ly: 30, thrust: -1 },
+  { lx: -17, ly: -30, thrust: 1 },
+  { lx: 17, ly: -30, thrust: 1 },
 ] as const
 
 export type SeatState = {

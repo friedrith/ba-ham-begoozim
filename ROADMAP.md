@@ -48,11 +48,11 @@ least one level uses a theme and a hazard that don't exist today.
 Four corner pads already exist, but they are small, always visible, and labelled
 with keyboard keys. The goal is a version that feels made for a shared tablet.
 
-- [ ] Detect a touch screen and turn on touch mode only then
-- [ ] In touch mode, touching a screen corner triggers that bean's blast, with a
+- [x] Detect a touch screen and turn on touch mode only then
+- [x] In touch mode, touching a screen corner triggers that bean's blast, with a
       tap target large enough for four people sharing one iPad
-- [ ] Hide the keyboard labels and adapt the menu hints in touch mode
-- [ ] Keep the current layout on devices without a touch screen
+- [x] Hide the keyboard labels and adapt the menu hints in touch mode
+- [x] Keep the current layout on devices without a touch screen
 - [ ] Test on a real iPad: four simultaneous touches, sound unlocking on first
       touch, no page zoom or scroll, portrait and landscape
 

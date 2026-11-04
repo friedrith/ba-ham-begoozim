@@ -22,7 +22,8 @@ bun install && bun dev
 | Rear right  | `M` | Pushes forward, turns left  |
 
 Playing solo? `←` and `→` work the rear seats and `↓` works both front seats. On
-a touch screen the four corner pads do the same job. `Esc` pauses, `R` restarts.
+a touch screen each bean owns a quarter of the screen: hold your corner to blast.
+`Esc` pauses, `R` restarts.
 
 Blast within a blink of another bean for a **harmony**: a bigger shove, a little
 gas back, and a chord.

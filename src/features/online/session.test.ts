@@ -324,6 +324,28 @@ describe('prediction', () => {
     })
   })
 
+  test('every player counts the same blasts, predicted or not', () => {
+    const a = join('a', 60)
+    const b = join('b', 20)
+    run(300)
+    seats(a, 2)
+    seats(b, 3)
+    run(300)
+    race(a)
+    a.session.setHeld(holding(2))
+    run(300)
+    a.session.setHeld(holding())
+    run(500)
+    b.session.setHeld(holding(3))
+    run(300)
+    b.session.setHeld(holding())
+    run(500)
+    for (const client of [a, b]) {
+      expect(client.session.tally.seats[2].blasts).toBe(1)
+      expect(client.session.tally.seats[3].blasts).toBe(1)
+    }
+  })
+
   test('what a player sees agrees with the room, despite the ping', () => {
     const a = join('a', 80)
     const nearby = join('nearby')

@@ -71,6 +71,48 @@ export const fa: Messages = {
     nextLevel: 'کانال بعدی',
     again: 'یه بار دیگه',
     menu: 'منو',
+    rank: (rank) => `لقب فعلی: ${rank}`,
+    rankUp: (rank) => `لقب جدید: ${rank}!`,
+    trophyUnlocked: (trophy) => `همهٔ کانال‌ها رو رد کردید. ${trophy} مال شماست!`,
+    share: 'مدرک رو بفرست',
+  },
+  ranks: {
+    squeak: 'گوزوی تازه‌کار',
+    regular: 'مشتری ثابت وان',
+    menace: 'بلای کانال',
+    duke: 'خان گاز',
+    king: 'شاه گوز',
+  },
+  trophy: 'دودول طلایی',
+  awards: {
+    suspect: {
+      title: 'متهم ردیف اول',
+      detail: (value) => `غرق‌شدن‌های زیر سرش: ${value}`,
+    },
+    fumes: {
+      title: 'باک خالی',
+      detail: (value) => `گوزیدن با هیچی: ${value}`,
+    },
+    guzzler: {
+      title: 'پرمصرف',
+      detail: (value) => `ثانیه‌های زور زدن: ${value}`,
+    },
+    choir: {
+      title: 'سرگروه کر',
+      detail: (value) => `هم‌نوایی‌ها: ${value}`,
+    },
+    trigger: {
+      title: 'نشیمن‌گاه بی‌قرار',
+      detail: (value) => `حادثه‌های جداگانه: ${value}`,
+    },
+    passenger: {
+      title: 'مسافر',
+      detail: (value) => `گوزیدن: ${value}`,
+    },
+    alsoThere: {
+      title: 'اینم بود',
+      detail: () => 'حضورش تأیید شد.',
+    },
   },
   online: {
     title: 'بازی آنلاین',
@@ -113,6 +155,12 @@ export const fa: Messages = {
     ignite: 'ویژژژ!',
     can: '+گاز',
     respawn: 'قلپ قلپ!',
+    blame: [
+      (seat) => `کار ${seat} بود!`,
+      (seat) => `دستت درد نکنه ${seat}.`,
+      (seat) => `تقصیر ${seat} بود!`,
+    ],
+    blameNobody: 'هیچ‌کس هیچ کاری نکرد!',
     go: 'بگوزید!',
     smash: 'شترق!',
     skid: 'ویییی!',

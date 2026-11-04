@@ -80,8 +80,8 @@ Resend before any email goes out.
 
 ## Analytics
 
-Pageviews and game events (`level_started`, `level_finished`, `level_abandoned`)
-go to [PostHog](https://posthog.com) when these variables are set. The Vercel
+Pageviews and game events (`level_started`, `level_finished`, `level_abandoned`,
+`card_shared`) go to [PostHog](https://posthog.com) when these variables are set. The Vercel
 integration sets them for Preview and Production, so local dev sends nothing.
 PostHog is used for analytics only: flags, replay, surveys and the rest stay off.
 

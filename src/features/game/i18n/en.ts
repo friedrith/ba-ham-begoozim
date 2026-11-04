@@ -67,6 +67,48 @@ export const en: Messages = {
     nextLevel: 'Next canal',
     again: 'Go again',
     menu: 'Menu',
+    rank: (rank) => `Current title: ${rank}`,
+    rankUp: (rank) => `New title: ${rank}!`,
+    trophyUnlocked: (trophy) => `Every canal cleared. You win the ${trophy}!`,
+    share: 'Share the evidence',
+  },
+  ranks: {
+    squeak: 'Damp Squeak',
+    regular: 'Bathtub Regular',
+    menace: 'Canal Menace',
+    duke: 'Duke of Gas',
+    king: 'Gooz King',
+  },
+  trophy: 'Golden Dudul',
+  awards: {
+    suspect: {
+      title: 'Prime Suspect',
+      detail: (value) => `Wipeouts caused: ${value}`,
+    },
+    fumes: {
+      title: 'Running on Fumes',
+      detail: (value) => `Blasts of pure nothing: ${value}`,
+    },
+    guzzler: {
+      title: 'Gas Guzzler',
+      detail: (value) => `Seconds of sustained effort: ${value}`,
+    },
+    choir: {
+      title: 'Choir Captain',
+      detail: (value) => `Harmonies joined: ${value}`,
+    },
+    trigger: {
+      title: 'Itchy Trigger Cheek',
+      detail: (value) => `Separate incidents: ${value}`,
+    },
+    passenger: {
+      title: 'Passenger',
+      detail: (value) => `Blasts: ${value}`,
+    },
+    alsoThere: {
+      title: 'Also There',
+      detail: () => 'Presence confirmed.',
+    },
   },
   online: {
     title: 'Play online',
@@ -109,6 +151,12 @@ export const en: Messages = {
     ignite: 'WHOOSH!',
     can: '+GAS',
     respawn: 'GLUG!',
+    blame: [
+      (seat) => `${seat} did this!`,
+      (seat) => `Thanks, ${seat}.`,
+      (seat) => `Blame ${seat}!`,
+    ],
+    blameNobody: 'Nobody did anything!',
     go: 'BLAST!',
     smash: 'CRASH!',
     skid: 'WHEEE!',

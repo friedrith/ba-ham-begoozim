@@ -16,6 +16,9 @@ import { formatNumber, type Messages } from '../i18n'
 import type { Effects } from './effects'
 
 export const BEAN_COLORS = ['#e4572e', '#f2b632', '#2ec4b6', '#a05195']
+/** The bean's outline as an icon, in a box 44 wide centred on the origin. */
+export const BEAN_ICON_PATH =
+  'M-14-3C-18-20 18-20 14-3C19 12 8 18 3 11C1 8-1 8-3 11C-8 18-19 12-14-3Z'
 const INK = '#2b1a12'
 
 type Palette = {

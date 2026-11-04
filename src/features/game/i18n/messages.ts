@@ -1,3 +1,6 @@
+import type { RankId } from '../progress'
+import type { AwardId } from '../tally'
+
 export type Locale = 'en' | 'fa'
 
 export type LevelText = { name: string; blurb: string; hint: string }
@@ -80,7 +83,18 @@ export type Messages = {
     nextLevel: string
     again: string
     menu: string
+    rank: (rank: string) => string
+    rankUp: (rank: string) => string
+    trophyUnlocked: (trophy: string) => string
+    /** Shown on the button once the picture of the result is ready. */
+    share: string
   }
+  /** Earned by total stars, lowest first. */
+  ranks: Record<RankId, string>
+  /** A secret, earned by finishing every level. Only its owner ever sees the name. */
+  trophy: string
+  /** One goes to each bean at the end of a race. `detail` gets the winning score. */
+  awards: Record<AwardId, { title: string; detail: (value: string) => string }>
   online: {
     title: string
     intro: string
@@ -121,6 +135,10 @@ export type Messages = {
     ignite: string
     can: string
     respawn: string
+    /** Accuses a bean of the wipeout, in turn. Gets the seat's name. */
+    blame: readonly ((seat: string) => string)[]
+    /** Shown when nobody had blasted for a while before the wipeout. */
+    blameNobody: string
     go: string
     smash: string
     skid: string

@@ -105,7 +105,7 @@ describe('wipeouts', () => {
 
 describe('levels', () => {
   for (const level of LEVELS) {
-    test(`${level.name} can be finished`, () => {
+    test(`${level.id} can be finished`, () => {
       const world = createWorld(level)
       let steps = 0
       const limit = 240 / STEP
@@ -114,7 +114,7 @@ describe('levels', () => {
         steps++
       }
       console.log(
-        `${level.name}: ${world.raceTime.toFixed(1)}s (par ${level.par}), ` +
+        `${level.id}: ${world.raceTime.toFixed(1)}s (par ${level.par}), ` +
           `${world.cansTaken}/${world.cans.length} cans, ` +
           `${world.wipeouts} wipeouts, ${world.harmonies} harmonies`,
       )

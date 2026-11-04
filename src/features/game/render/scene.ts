@@ -9,6 +9,7 @@ import {
   urchinPosition,
   type World,
 } from '../engine/world'
+import { formatNumber, type Messages } from '../i18n'
 import type { Effects } from './effects'
 
 export const BEAN_COLORS = ['#e4572e', '#f2b632', '#2ec4b6', '#a05195']
@@ -546,7 +547,11 @@ function drawTub(ctx: CanvasRenderingContext2D, world: World, fx: Effects) {
   ctx.restore()
 }
 
-export type SceneOptions = { font: string; reducedMotion: boolean }
+export type SceneOptions = {
+  font: string
+  reducedMotion: boolean
+  dir: Messages['dir']
+}
 
 export function drawScene(
   ctx: CanvasRenderingContext2D,
@@ -647,6 +652,7 @@ export function drawScene(
   }
   ctx.globalAlpha = 1
 
+  ctx.direction = options.dir
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.lineJoin = 'round'
@@ -672,12 +678,14 @@ export function drawCountdown(
   w: number,
   h: number,
   font: string,
+  t: Messages,
 ) {
   const showGo = world.status === 'racing' && world.raceTime < 0.8
   if (world.status !== 'countdown' && !showGo) return
-  const text = showGo ? 'BLAST!' : String(Math.ceil(world.countdown))
+  const text = showGo ? t.fx.go : formatNumber(Math.ceil(world.countdown), t.locale)
   const size = Math.min(w, h) * 0.24
   ctx.font = `${size}px ${font}`
+  ctx.direction = t.dir
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.lineJoin = 'round'

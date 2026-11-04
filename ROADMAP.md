@@ -88,14 +88,14 @@ a normal internet connection.
 
 Offer the whole game in Persian alongside English.
 
-- [ ] Move all player-facing text into translation files, including level names,
+- [x] Move all player-facing text into translation files, including level names,
       blurbs and hints from `engine/levels.ts`
 - [ ] Translate into Persian and have a native speaker review the humour
-- [ ] Pick the language from the browser, with a switcher that remembers the choice
-- [ ] Support right-to-left layout in the menu, HUD and panels, and add a Persian
+- [x] Pick the language from the browser, with a switcher that remembers the choice
+- [x] Support right-to-left layout in the menu, HUD and panels, and add a Persian
       font that suits the game's style
-- [ ] Show numbers such as times and pars in Persian digits
-- [ ] Keep the on-screen key labels matching the keys players must press on a
+- [x] Show numbers such as times and pars in Persian digits
+- [x] Keep the on-screen key labels matching the keys players must press on a
       Persian keyboard (input already uses physical key positions)
 
 **Done when** a Persian speaker can play from the menu to the last level without

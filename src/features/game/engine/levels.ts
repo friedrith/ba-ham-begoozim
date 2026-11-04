@@ -12,10 +12,8 @@ export type LevelItem =
   | { kind: 'flame'; at: number; offset?: number }
 
 export type LevelDef = {
+  /** Also the key for this level's name, blurb and hint in `i18n/en.ts` and `i18n/fa.ts`. */
   id: string
-  name: string
-  blurb: string
-  hint: string
   theme: Theme
   /** Seconds to beat for the time star. */
   par: number
@@ -28,9 +26,6 @@ export type LevelDef = {
 export const LEVELS: readonly LevelDef[] = [
   {
     id: 'bathwater-bend',
-    name: 'Bathwater Bend',
-    blurb: 'Soapy, warm and forgiving. Learn to steer before anyone gets hurt.',
-    hint: 'Rear beans push you forward. Blast both at once for a harmony!',
     theme: 'tile',
     par: 45,
     path: [
@@ -66,9 +61,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'storm-drain',
-    name: 'Storm Drain',
-    blurb: 'Sliding gates, spinning paddles and a current with a grudge.',
-    hint: 'Front beans push you backward. Use them to brake and spin on the spot.',
     theme: 'brick',
     par: 75,
     path: [
@@ -109,9 +101,6 @@ export const LEVELS: readonly LevelDef[] = [
   },
   {
     id: 'boiler-room',
-    name: 'The Boiler Room',
-    blurb: 'Open flames and open plumbing. Blast near a flame and hold on tight.',
-    hint: 'Blasting next to a pilot light ignites you for a huge boost. Whoosh.',
     theme: 'iron',
     par: 50,
     path: [

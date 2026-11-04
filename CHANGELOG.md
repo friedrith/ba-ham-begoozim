@@ -14,6 +14,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Stickers: put up to three on each bean. They show in the race, on the share card and to teammates online ([#29](https://github.com/friedrith/ba-ham-begoozim/pull/29)).
 - Harder levels have Persian scenery on the banks: a shelang, an aftabeh, a samovar, a farsh and dampayi ([#30](https://github.com/friedrith/ba-ham-begoozim/pull/30)).
 - The share button shows a spinner while the picture is being made ([#31](https://github.com/friedrith/ba-ham-begoozim/pull/31)).
+- The result card pops in when the group wins, with stars stamped on, beans dancing Persian and confetti ([#32](https://github.com/friedrith/ba-ham-begoozim/pull/32)).
 
 ### Fixed
 

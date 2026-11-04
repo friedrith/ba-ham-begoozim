@@ -943,9 +943,9 @@ export function Game() {
           )}
 
           {result && (
-            <Panel title={t.result.title}>
+            <Panel title={t.result.title} celebrate>
               <div className="flex flex-col items-center gap-3">
-                <Stars count={result.stars} t={t} />
+                <Stars count={result.stars} t={t} celebrate />
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
                   <dt>
                     {t.result.time(
@@ -970,11 +970,12 @@ export function Game() {
                 </dl>
                 <ul className="flex w-full flex-col gap-1">
                   {result.card.awards.map((award, seat) => (
-                    <li key={seat} className="flex items-center gap-2">
+                    <li key={seat} className="flex items-center gap-3">
                       <BeanFace
                         seat={seat}
                         stickers={result.card.stickers[seat]}
                         className="size-9 shrink-0"
+                        dance
                       />
                       <span className="flex min-w-0 flex-col text-xs leading-tight">
                         <span className="font-display text-base leading-tight">

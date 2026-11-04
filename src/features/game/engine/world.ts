@@ -11,7 +11,8 @@ const RESTITUTION = 0.45
 
 const KICK = 70
 const HOLD_THRUST = 130
-const KICK_GAS = 0.1
+/** The least gas a press can blast with. */
+export const KICK_GAS = 0.1
 const HOLD_GAS = 0.32
 const REGEN_GAS = 0.2
 const CAN_GAS = 0.4

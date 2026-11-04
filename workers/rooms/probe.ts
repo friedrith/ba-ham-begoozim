@@ -28,7 +28,7 @@ function gaussian() {
 }
 
 function percentile(values: number[], p: number) {
-  const sorted = [...values].sort((a, b) => a - b)
+  const sorted = values.toSorted((a, b) => a - b)
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] ?? 0
 }
 

@@ -241,7 +241,12 @@ export default {
     }
 
     const code = /^\/rooms\/([^/]+)\/ws$/.exec(pathname)?.[1]
-    if (code && request.headers.get('upgrade') === 'websocket' && CODE.test(code)) {
+    if (
+      code &&
+      CODE.test(code) &&
+      request.method === 'GET' &&
+      request.headers.get('upgrade') === 'websocket'
+    ) {
       // The whole answer to "how does a room stay on one machine".
       return env.ROOMS.get(env.ROOMS.idFromName(code)).fetch(request)
     }

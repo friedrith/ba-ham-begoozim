@@ -44,6 +44,8 @@ let saved: SavedRoom | null
 let ticking: boolean
 let room: Room
 
+const isTicking = () => ticking
+
 const host: RoomHost = {
   now: () => now,
   peers: () => open,
@@ -215,7 +217,7 @@ describe('racing', () => {
     const a = join('a')
     say(a, { t: 'start', level: LEVELS[0].id })
     // The bot holds every seat, so this just takes a while.
-    for (let i = 0; i < 300_000 && ticking; i++) {
+    for (let i = 0; i < 300_000 && isTicking(); i++) {
       now += TICK_MS
       room.tick()
     }
@@ -241,17 +243,17 @@ describe('racing', () => {
   })
 })
 
-describe('disconnects', () => {
-  function raceWithTwo() {
-    const a = join('a')
-    const b = join('b')
-    say(a, { t: 'bots', on: false })
-    say(a, { t: 'seat', seat: 2, take: true })
-    say(b, { t: 'seat', seat: 3, take: true })
-    startRacing(a)
-    return { a, b }
-  }
+function raceWithTwo() {
+  const a = join('a')
+  const b = join('b')
+  say(a, { t: 'bots', on: false })
+  say(a, { t: 'seat', seat: 2, take: true })
+  say(b, { t: 'seat', seat: 3, take: true })
+  startRacing(a)
+  return { a, b }
+}
 
+describe('disconnects', () => {
   test('a dropped player’s blast stops, and their seat is held', () => {
     const { a, b } = raceWithTwo()
     say(b, { t: 'in', seat: 3, on: true, at: now })
@@ -300,6 +302,20 @@ describe('disconnects', () => {
     expect(a.last('room')?.seats[3].status).toBe('bot')
   })
 
+  test('a hold runs out in the lobby too, with nothing else going on', () => {
+    const a = join('a')
+    const b = join('b')
+    say(b, { t: 'seat', seat: 3, take: true })
+    drop(b)
+    expect(a.last('room')?.seats[3].status).toBe('away')
+    run(SEAT_HOLD_MS + 1100)
+    expect(a.last('room')?.seats[3].status).toBe('bot')
+    say(a, { t: 'seat', seat: 3, take: true })
+    expect(a.last('room')?.seats[3]).toEqual({ owner: 1, status: 'here' })
+    // Nothing to wait for now, so the room can hibernate.
+    expect(ticking).toBe(false)
+  })
+
   test('a late return still reclaims a seat nobody took', () => {
     const { b } = raceWithTwo()
     drop(b)
@@ -312,8 +328,10 @@ describe('disconnects', () => {
     const { a, b } = raceWithTwo()
     drop(a)
     drop(b)
-    expect(ticking).toBe(false)
     const clock = saved?.world
+    run(SEAT_HOLD_MS + 1100)
+    // Timers can stop too, now that no seats are being held.
+    expect(ticking).toBe(false)
     now += 60_000
     const again = join('a')
     expect(ticking).toBe(true)

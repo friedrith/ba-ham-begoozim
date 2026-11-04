@@ -26,6 +26,8 @@ type MenuProps = {
   touchMode: boolean
   onPlay: (levelIndex: number) => void
   onLocaleChange: (locale: Locale) => void
+  /** Shown between the levels and the instructions. */
+  online?: React.ReactNode
 }
 
 export function Stars({
@@ -67,6 +69,7 @@ export function Menu({
   touchMode,
   onPlay,
   onLocaleChange,
+  online,
 }: MenuProps) {
   const sliderRef = useRef<HTMLOListElement>(null)
   const [selected, setSelected] = useState(() => nextLevelIndex(progress))
@@ -270,6 +273,8 @@ export function Menu({
             </button>
           </div>
         </section>
+
+        {online}
 
         <section
           aria-label={t.menu.howToPlay}

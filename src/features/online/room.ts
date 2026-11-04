@@ -15,6 +15,7 @@ import {
 import {
   CLOSE_ABUSE,
   CLOSE_CODES,
+  HEARTBEAT,
   parseClientMessage,
   PROTOCOL,
   type ClientMessage,
@@ -101,6 +102,7 @@ export class Room {
   private checkpointDue = 0
   private housekeepingDue = 0
   private lastInputAt = 0
+  private wasRunning = false
   private lastSeats = ''
   private largestGap = 0
   private gapThisSecond = 0
@@ -127,6 +129,11 @@ export class Room {
   }
 
   receive(peer: Peer, text: string) {
+    // Hosts that can answer this without waking the room never get as far as here.
+    if (text === HEARTBEAT) {
+      peer.send(HEARTBEAT)
+      return
+    }
     if (this.overBudget(peer)) {
       peer.close(CLOSE_ABUSE, 'too many messages')
       return
@@ -170,16 +177,17 @@ export class Room {
     this.lastTick = now
     this.gapThisSecond = Math.max(this.gapThisSecond, gap)
     const world = this.world
-    if (!world) return
-
-    this.accumulator += Math.min(gap, MAX_CATCH_UP_MS)
-    while (this.accumulator >= STEP_MS && world.status !== 'finished') {
-      this.stepOnce(world)
-      this.accumulator -= STEP_MS
+    const running = this.running()
+    if (world && running) {
+      this.accumulator += Math.min(gap, MAX_CATCH_UP_MS)
+      while (this.accumulator >= STEP_MS && world.status !== 'finished') {
+        this.stepOnce(world)
+        this.accumulator -= STEP_MS
+      }
     }
 
     if (now >= this.housekeepingDue) this.housekeeping(now)
-    if (this.world !== world) return
+    if (!world || !running || this.world !== world) return
     if (world.status === 'finished') {
       this.sendSnapshot(world, now)
       this.save()
@@ -410,7 +418,8 @@ export class Room {
     this.gapThisSecond = 0
     // Holds expire with no message to trigger an update, so look for them here.
     if (JSON.stringify(this.seatViews()) !== this.lastSeats) this.announce()
-    if (now - this.lastInputAt > IDLE_RACE_MS) this.backToLobby()
+    if (this.running() && now - this.lastInputAt > IDLE_RACE_MS) this.backToLobby()
+    this.syncTicking()
   }
 
   private sendSnapshot(world: World, now: number) {
@@ -476,18 +485,31 @@ export class Room {
     this.host.save(this.saved)
   }
 
-  private syncTicking() {
-    const wanted =
+  /** Whether there's a race on and anyone there for it. Otherwise it waits for them. */
+  private running() {
+    return (
       this.world !== null &&
       this.world.status !== 'finished' &&
       Object.values(this.saved.players).some((player) => player.goneAt === null)
-    if (wanted === this.ticking) return
-    this.ticking = wanted
-    if (wanted) {
-      this.lastTick = this.host.now()
+    )
+  }
+
+  /** Whether a seat is being kept for someone, which has to run out with no message. */
+  private holdingSeat() {
+    return SEATS.some((_, seat) => this.seatStatus(seat) === 'away')
+  }
+
+  private syncTicking() {
+    const running = this.running()
+    if (running && !this.wasRunning) {
       this.accumulator = 0
       this.lastInputAt = this.host.now()
     }
+    this.wasRunning = running
+    const wanted = running || this.holdingSeat()
+    if (wanted === this.ticking) return
+    this.ticking = wanted
+    if (wanted) this.lastTick = this.host.now()
     this.host.setTicking(wanted)
   }
 }

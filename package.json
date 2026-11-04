@@ -14,7 +14,8 @@
     "ci": "oxlint && oxfmt --check .",
     "typecheck": "tsc --noEmit",
     "rooms:dev": "bunx wrangler@4.157.0 dev --config workers/rooms/wrangler.jsonc",
-    "rooms:deploy": "bunx wrangler@4.157.0 deploy --config workers/rooms/wrangler.jsonc"
+    "rooms:deploy": "bunx wrangler@4.157.0 deploy --config workers/rooms/wrangler.jsonc",
+    "rooms:check": "bunx wrangler@4.157.0 deploy --dry-run --config workers/rooms/wrangler.jsonc"
   },
   "dependencies": {
     "clsx": "^2.1.1",

@@ -12,6 +12,7 @@ import {
   stepWorld,
   type World,
 } from '../game/engine/world'
+import type { ShoutId } from '../game/shouts'
 import { noStickers, normalizeStickers, type BeanStickers } from '../game/stickers'
 import {
   CLOSE_ABUSE,
@@ -42,6 +43,8 @@ export const SEAT_HOLD_MS = 15_000
 export const IDLE_RACE_MS = 5 * 60_000
 export const MAX_PEERS = 8
 const MAX_MESSAGES_PER_SECOND = 200
+/** Keeps one player mashing a button from burying everyone else's shouts. */
+export const SHOUT_GAP_MS = 400
 
 export type Peer = {
   send: (text: string) => void
@@ -118,6 +121,7 @@ export class Room {
   private largestGap = 0
   private gapThisSecond = 0
   private budgets = new WeakMap<Peer, { second: number; count: number }>()
+  private lastShouts = new WeakMap<Peer, number>()
 
   constructor(
     private readonly host: RoomHost,
@@ -258,6 +262,9 @@ export class Room {
       case 'stickers':
         this.setStickers(token, message.stickers)
         break
+      case 'shout':
+        this.shout(peer, token, message.id)
+        break
       default:
         break
     }
@@ -323,6 +330,16 @@ export class Room {
     player.stickers = stickers
     this.announce()
     this.save()
+  }
+
+  private shout(peer: Peer, token: string, id: ShoutId) {
+    const player = this.saved.players[token]
+    if (!player || !this.world) return
+    const now = this.host.now()
+    const last = this.lastShouts.get(peer)
+    if (last !== undefined && now - last < SHOUT_GAP_MS) return
+    this.lastShouts.set(peer, now)
+    this.broadcast({ t: 'shout', from: player.number, id })
   }
 
   private setSeat(token: string, seat: number, take: boolean) {

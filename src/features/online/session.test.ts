@@ -387,6 +387,48 @@ describe('prediction', () => {
   })
 })
 
+function heard(client: Client) {
+  return client.session.getState().shouts.map(({ from, id }) => ({ from, id }))
+}
+
+describe('shouts', () => {
+  test('reach the whole team, then fade', () => {
+    const a = join('a', 20)
+    const b = join('b', 20)
+    run(100)
+    botRace(a)
+    b.session.shout('stop')
+    run(100)
+    expect(heard(a)).toEqual([{ from: 2, id: 'stop' }])
+    expect(heard(b)).toEqual(heard(a))
+    run(4000)
+    expect(heard(a)).toEqual([])
+  })
+
+  test('only the latest few stay on screen', () => {
+    const a = join('a')
+    run(50)
+    botRace(a)
+    for (const id of ['more', 'stop', 'left', 'right'] as const) {
+      a.session.shout(id)
+      run(500)
+    }
+    expect(heard(a).map(({ id }) => id)).toEqual(['stop', 'left', 'right'])
+  })
+
+  test('don’t follow anyone into the next race', () => {
+    const a = join('a')
+    run(50)
+    botRace(a)
+    a.session.shout('sorry')
+    run(50)
+    expect(heard(a)).toHaveLength(1)
+    a.session.start(LEVELS[0].id)
+    run(50)
+    expect(heard(a)).toEqual([])
+  })
+})
+
 describe('races', () => {
   test('a new race starts with a new world, even on the same level', () => {
     const a = join('a')

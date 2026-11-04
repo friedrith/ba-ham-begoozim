@@ -10,7 +10,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - In-game feedback popup that emails bug reports, ideas and feedback ([#23](https://github.com/friedrith/ba-ham-begoozim/pull/23)).
 - Wipeouts name the bean to blame, every bean gets an award, total stars earn a title, and the result can be shared as a picture ([#25](https://github.com/friedrith/ba-ham-begoozim/pull/25)).
-- The share button shows a spinner while the picture is being made.
+- The share button shows a spinner while the picture is being made ([#31](https://github.com/friedrith/ba-ham-begoozim/pull/31)).
 
 ### Fixed
 

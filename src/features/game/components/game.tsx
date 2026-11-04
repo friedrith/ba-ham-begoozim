@@ -85,13 +85,13 @@ const PAD_POSITIONS = [
   'right-3 bottom-3',
 ]
 
-// In touch mode each pad fills its quarter of a phone screen, so no touch is wasted.
-// A tablet's quarter is far bigger than a thumb needs, so its pads stay in the corners.
+// In touch mode each pad sits in its corner and is only as big as its badge,
+// so a touch only blasts when it lands on the bean's badge.
 const TOUCH_PADS = [
-  'top-0 left-0 items-start justify-start',
-  'top-0 right-0 items-start justify-end',
-  'bottom-0 left-0 items-end justify-start',
-  'right-0 bottom-0 items-end justify-end',
+  'top-0 left-0',
+  'top-0 right-0',
+  'bottom-0 left-0',
+  'right-0 bottom-0',
 ]
 
 const TOUCH_BADGES = [
@@ -773,10 +773,7 @@ export function Game() {
                   'absolute flex cursor-pointer',
                   someoneElse && 'opacity-60',
                   touchMode
-                    ? [
-                        'data-blasting:bg-mustard/20 group tablet:size-64 size-1/2',
-                        TOUCH_PADS[i],
-                      ]
+                    ? ['group', TOUCH_PADS[i]]
                     : [
                         'bg-cream/90 border-ink w-24 flex-col items-center gap-1 rounded-2xl border-[3px] p-2 active:brightness-90 md:w-28',
                         PAD_POSITIONS[i],

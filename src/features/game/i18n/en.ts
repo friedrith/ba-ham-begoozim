@@ -1,0 +1,138 @@
+import type { Messages } from './messages'
+
+export const en: Messages = {
+  locale: 'en',
+  dir: 'ltr',
+  languageName: 'English',
+  title: 'Toot Canal',
+  menuTitle: 'Ba Ham Begoozim',
+  tagline: 'Four beans. One bathtub. No engine.',
+  menu: {
+    levels: 'Levels',
+    howToPlay: 'How to play',
+    howToPlayTitle: 'Grab a corner of the keyboard',
+    howToPlayTitleTouch: 'Grab a corner of the screen',
+    howToPlayBody:
+      '**Rear beans** push forward, **front beans** push back, and a blast from one side turns the tub. Blast within a blink of each other for a **harmony**: a bigger shove, gas back, and a chord.',
+    howToPlaySolo:
+      'Solo? `← →` work the rear and `↓` the front. On a touch screen, use the corner pads.',
+    stars: (count) => `${count} of 3 stars`,
+    par: (time) => `Par ${time}`,
+    best: (time) => `Best ${time}`,
+    play: 'Play',
+    totalStars: (count) => `${count} stars`,
+    sourceCode: 'View the source on GitHub',
+  },
+  hud: {
+    time: 'Time',
+    cans: 'Cans collected',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    restartLevel: 'Restart level',
+    pause: 'Pause',
+    seatPad: (seat) => `${seat.name} bean, key ${seat.key}`,
+    seatPadTouch: (seat) => `${seat.name} bean`,
+    holdCorner: 'Hold your corner to blast.',
+  },
+  paused: {
+    title: 'Paused',
+    resume: 'Keep tooting',
+    restart: 'Restart',
+    menu: 'Menu',
+  },
+  result: {
+    title: 'Canal cleared!',
+    time: (par) => `Time (par ${par})`,
+    cans: 'Cans',
+    harmonies: 'Harmonies',
+    wipeouts: 'Wipeouts',
+    nextLevel: 'Next canal',
+    again: 'Go again',
+    menu: 'Menu',
+  },
+  fx: {
+    toots: ['TOOT!', 'PARP!', 'PFFT!', 'BRRT!', 'FWEEP!', 'POOT!'],
+    harmony: 'HARMONY!',
+    ignite: 'WHOOSH!',
+    can: '+GAS',
+    respawn: 'GLUG!',
+    go: 'BLAST!',
+    smash: 'CRASH!',
+    skid: 'WHEEE!',
+  },
+  seats: [
+    { name: 'Front left', key: 'Q' },
+    { name: 'Front right', key: 'P' },
+    { name: 'Rear left', key: 'Z' },
+    { name: 'Rear right', key: 'M' },
+  ],
+  levels: {
+    'bathwater-bend': {
+      name: 'Bathwater Bend',
+      blurb: 'Soapy, warm and forgiving. Learn to steer before anyone gets hurt.',
+      hint: 'Rear beans push you forward. Blast both at once for a harmony!',
+    },
+    'storm-drain': {
+      name: 'Storm Drain',
+      blurb: 'Sliding gates, spinning paddles and a current with a grudge.',
+      hint: 'Front beans push you backward. Use them to brake and spin on the spot.',
+    },
+    'boiler-room': {
+      name: 'The Boiler Room',
+      blurb: 'Open flames and open plumbing. Blast near a flame and hold on tight.',
+      hint: 'Blasting next to a pilot light ignites you for a huge boost. Whoosh.',
+    },
+    'grout-line': {
+      name: 'Grout Line',
+      blurb:
+        'Back in the bathroom, with a third less room. The urchins moved in too.',
+      hint: 'Tap instead of holding. Small blasts keep you off the walls.',
+    },
+    'plughole-parade': {
+      name: 'Plughole Parade',
+      blurb:
+        'Every drain in the building is open. The safe line is one bathtub wide.',
+      hint: 'Whirlpools drag you in and sling you sideways. Blast early, not when you are circling.',
+    },
+    'sewer-slalom': {
+      name: 'Sewer Slalom',
+      blurb: 'Urchins in rows, and a current that wants a word. Weave or weep.',
+      hint: 'Look past the next urchin. By the time it is close, it is too late to turn.',
+    },
+    'the-flue': {
+      name: 'The Flue',
+      blurb: 'A chimney with ideas above its station. Narrow, furious and on fire.',
+      hint: 'The current is too strong to fight on gas alone. Light every flame you can reach.',
+    },
+    'valve-alley': {
+      name: 'Valve Alley',
+      blurb:
+        'Gate after gate after gate. Somebody up there is counting, and it is not you.',
+      hint: 'Gates only look random. Watch one cycle, then ride a flame through the gap.',
+    },
+    'cold-snap': {
+      name: 'Cold Snap',
+      blurb:
+        'Somebody left the freezer open. The ceiling is starting to drop things.',
+      hint: 'A shadow on the water means an icicle is coming down. Do not be under it.',
+    },
+    'black-ice': {
+      name: 'Black Ice',
+      blurb:
+        'The water has gone hard. It turns out water was doing most of the steering.',
+      hint: 'On ice the tub keeps sliding the way it was going. Brake early and turn late.',
+    },
+    'frostbite-flume': {
+      name: 'Frostbite Flume',
+      blurb:
+        'Ice underneath, icicles overhead, and a gate at the bottom for the survivors.',
+      hint: 'A front bean on the ice can save you, as long as somebody remembers it exists.',
+    },
+    'the-last-drop': {
+      name: 'The Last Drop',
+      blurb:
+        'Every hazard in the building, one narrow pipe, and no gas to spare. Good luck, beans.',
+      hint: 'Nothing new here. Everything you already hate, all at once.',
+    },
+  },
+}

@@ -1,4 +1,4 @@
-# Toot Canal
+# Ba Ham Begoozim
 
 A couch co-op browser game. Four baked beans share one clawfoot bathtub, and the
 only engine on board is what the beans had for lunch. Everyone blasts from their
@@ -28,11 +28,21 @@ a touch screen each bean owns a quarter of the screen: hold your corner to blast
 Blast within a blink of another bean for a **harmony**: a bigger shove, a little
 gas back, and a chord.
 
+## Languages
+
+The game follows the browser's language, and the menu has a switcher that remembers
+the choice. In Persian (فارسی) the layout runs right to left, but seats and keys stay
+in the same physical place: the labels `ض`, `ح`, `ظ` and `پ` are the same keys as `Q`,
+`P`, `Z` and `M` on the standard Persian layout (ISIRI 9147).
+
 ## How it's built
 
 - `src/features/game/engine` — deterministic, DOM-free simulation and levels.
 - `src/features/game/render` — Canvas 2D scene, particles and the WebAudio synth.
 - `src/features/game/components` — menu, HUD and the game loop.
+- `src/features/game/i18n` — English and Persian text, language choice and number
+  formatting. A new level needs an entry under its id in both `en.ts` and `fa.ts`,
+  and the tests fail until it has one.
 
 `bun test` runs a bot through every level, so a course that can't be finished
 fails the suite. The same bot drives the demo behind the menu.

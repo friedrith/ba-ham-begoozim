@@ -19,7 +19,7 @@ Nothing checks a PR today. The scripts already exist, so this only needs wiring.
 - [x] Run on every PR and on pushes to `master`, using Bun
 - [x] Run `bun run ci` (lint and format check), `bun run typecheck`, `bun test`
       and `bun run build`
-- [ ] Make the checks required before merging to `master`
+- [x] Make the checks required before merging to `master`
 
 Deployment stays with Vercel. Actions only checks the code.
 
@@ -30,11 +30,11 @@ Deployment stays with Vercel. Actions only checks the code.
 There are three levels today. Add more with a steadily rising difficulty curve,
 then introduce original content once the existing hazards are used up.
 
-- [ ] **Harder levels:** new courses using the existing hazards, with narrower
+- [x] **Harder levels:** new courses using the existing hazards, with narrower
       channels, tighter pars, and hazards combined in tougher ways
-- [ ] **New content:** new themes (`Theme`) and new hazards (`LevelItem`), each
+- [x] **New content:** new themes (`Theme`) and new hazards (`LevelItem`), each
       with its own rendering, sound and a level that teaches it
-- [ ] Rework the menu so it stays readable with many levels
+- [x] Rework the menu so it stays readable with many levels
 
 The test suite runs a bot through every level, so a course it can't finish fails.
 Harder levels will probably need a better bot in `engine/autopilot.ts`. It must
@@ -88,14 +88,14 @@ a normal internet connection.
 
 Offer the whole game in Persian alongside English.
 
-- [ ] Move all player-facing text into translation files, including level names,
+- [x] Move all player-facing text into translation files, including level names,
       blurbs and hints from `engine/levels.ts`
 - [ ] Translate into Persian and have a native speaker review the humour
-- [ ] Pick the language from the browser, with a switcher that remembers the choice
-- [ ] Support right-to-left layout in the menu, HUD and panels, and add a Persian
+- [x] Pick the language from the browser, with a switcher that remembers the choice
+- [x] Support right-to-left layout in the menu, HUD and panels, and add a Persian
       font that suits the game's style
-- [ ] Show numbers such as times and pars in Persian digits
-- [ ] Keep the on-screen key labels matching the keys players must press on a
+- [x] Show numbers such as times and pars in Persian digits
+- [x] Keep the on-screen key labels matching the keys players must press on a
       Persian keyboard (input already uses physical key positions)
 
 **Done when** a Persian speaker can play from the menu to the last level without

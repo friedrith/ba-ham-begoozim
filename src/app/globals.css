@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* ---------------------------------------------------------------------------
-   Design tokens — Toot Canal
+   Design tokens — Ba Ham Begoozim
    A vintage baked-bean can label: tomato sauce, mustard and cream, with ink.
    --------------------------------------------------------------------------- */
 
@@ -38,6 +38,13 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
+  }
+
+  [lang='fa'] {
+    --font-display:
+      var(--font-lalezar), var(--font-vazirmatn), system-ui, sans-serif;
+    --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-sans);
   }
 
   :focus-visible {

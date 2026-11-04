@@ -2,7 +2,7 @@
 
 import { clsx } from 'clsx'
 import { Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { setInputMode, track } from '../analytics'
 import { autopilot } from '../engine/autopilot'
@@ -15,7 +15,9 @@ import {
   stepWorld,
   type World,
 } from '../engine/world'
-import { formatTime, loadProgress, recordRun, type Progress } from '../progress'
+import { formatNumber, formatTime } from '../i18n'
+import { useLocale } from '../i18n/use-locale'
+import { loadProgress, recordRun, type Progress } from '../progress'
 import { applyEvent, createEffects, updateEffects } from '../render/effects'
 import {
   createCamera,
@@ -37,6 +39,8 @@ const KEY_SEATS: Record<string, number[]> = {
   ArrowDown: [0, 1],
 }
 
+// Physical on purpose: each seat keeps its screen corner in right-to-left languages too.
+// The pads also set dir="ltr", because flex alignment would otherwise follow the language.
 const PAD_POSITIONS = [
   'top-16 left-3 md:top-20',
   'top-16 right-3 md:top-20',
@@ -109,6 +113,10 @@ export function Game() {
   const screenRef = useRef<Screen>({ name: 'menu' })
   const pausedRef = useRef(false)
 
+  const { t, setLocale } = useLocale()
+  const tRef = useRef(t)
+  const fontRef = useRef('sans-serif')
+
   const [screen, setScreen] = useState<Screen>({ name: 'menu' })
   const [paused, setPaused] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -123,6 +131,14 @@ export function Game() {
   useEffect(() => {
     setInputMode(touchMode ? 'touch' : 'keyboard')
   }, [touchMode])
+
+  useLayoutEffect(() => {
+    tRef.current = t
+    fontRef.current =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--font-display')
+        .trim() || 'sans-serif'
+  }, [t])
 
   const syncHeld = useCallback(() => {
     const held = padPointers.current.map((pointers) => pointers.size > 0)
@@ -252,10 +268,6 @@ export function Game() {
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
 
-    const font =
-      getComputedStyle(document.documentElement)
-        .getPropertyValue('--font-bagel')
-        .trim() || 'sans-serif'
     const reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
@@ -319,7 +331,7 @@ export function Game() {
         }
 
         for (const event of world.events) {
-          applyEvent(fxRef.current, world, event)
+          applyEvent(fxRef.current, world, event, tRef.current.fx)
           if (!demo) soundRef.current?.handle(event)
           if (event.type === 'finish') handleFinish(world)
         }
@@ -333,6 +345,8 @@ export function Game() {
         }
       }
 
+      const text = tRef.current
+      const font = fontRef.current
       const dpr = canvas.width / (canvas.clientWidth || 1)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       drawScene(
@@ -345,15 +359,26 @@ export function Game() {
         {
           font,
           reducedMotion,
+          dir: text.dir,
         },
       )
       if (!demo)
-        drawCountdown(ctx, world, canvas.clientWidth, canvas.clientHeight, font)
+        drawCountdown(
+          ctx,
+          world,
+          canvas.clientWidth,
+          canvas.clientHeight,
+          font,
+          text,
+        )
 
       if (timerRef.current)
-        timerRef.current.textContent = formatTime(world.raceTime)
+        timerRef.current.textContent = formatTime(world.raceTime, text.locale)
       if (cansRef.current) {
-        cansRef.current.textContent = `${world.cansTaken}/${world.cans.length}`
+        cansRef.current.textContent = formatNumber(
+          `${world.cansTaken}/${world.cans.length}`,
+          text.locale,
+        )
       }
       world.seats.forEach((seat, i) => {
         const bar = barRefs.current[i]
@@ -387,22 +412,27 @@ export function Game() {
       <canvas ref={canvasRef} className="absolute inset-0 size-full" />
 
       {screen.name === 'menu' && (
-        <Menu progress={progress} touchMode={touchMode} onPlay={startLevel} />
+        <Menu
+          t={t}
+          progress={progress}
+          touchMode={touchMode}
+          onPlay={startLevel}
+          onLocaleChange={setLocale}
+        />
       )}
 
       {level && screen.name === 'play' && (
         <>
-          {SEATS.map((seat, i) => (
+          {t.seats.map((seat, i) => (
             <button
-              key={seat.key}
+              key={i}
+              dir="ltr"
               ref={(element) => {
                 padRefs.current[i] = element
               }}
               type="button"
               aria-label={
-                touchMode
-                  ? `${seat.name} bean`
-                  : `${seat.name} bean, key ${seat.key}`
+                touchMode ? t.hud.seatPadTouch(seat) : t.hud.seatPad(seat)
               }
               tabIndex={-1}
               onPointerDown={(event) => {
@@ -423,6 +453,7 @@ export function Game() {
               )}
             >
               <span
+                dir={t.dir}
                 className={
                   touchMode
                     ? clsx(
@@ -438,7 +469,7 @@ export function Game() {
                     className={touchMode ? 'size-12 shrink-0 md:size-16' : 'size-9'}
                   />
                   {touchMode ? (
-                    <span className="text-left text-sm leading-tight font-bold md:text-base">
+                    <span className="text-start text-sm leading-tight font-bold md:text-base">
                       {seat.name}
                     </span>
                   ) : (
@@ -457,7 +488,7 @@ export function Game() {
                     ref={(element) => {
                       barRefs.current[i] = element
                     }}
-                    className="bg-gas block h-full w-full origin-left"
+                    className="bg-gas block h-full w-full origin-left rtl:origin-right"
                   />
                 </span>
               </span>
@@ -473,20 +504,24 @@ export function Game() {
             )}
           >
             <div className="bg-cream border-ink font-display flex items-center gap-3 rounded-full border-[3px] px-4 py-1 text-lg md:text-2xl">
-              <span ref={timerRef} className="tabular-nums" aria-label="Time">
-                0:00.0
+              <span
+                ref={timerRef}
+                className="tabular-nums rtl:inline-block rtl:min-w-[3.4em] rtl:text-center"
+                aria-label={t.hud.time}
+              >
+                {formatTime(0, t.locale)}
               </span>
               <span
                 className="text-sauce flex items-center gap-1"
-                aria-label="Cans collected"
+                aria-label={t.hud.cans}
               >
-                🥫 <span ref={cansRef}>0/0</span>
+                🥫 <span ref={cansRef}>{formatNumber('0/0', t.locale)}</span>
               </span>
             </div>
             <div className="pointer-events-auto flex gap-2">
               <button
                 type="button"
-                aria-label={muted ? 'Unmute' : 'Mute'}
+                aria-label={muted ? t.hud.unmute : t.hud.mute}
                 onClick={() => {
                   soundRef.current?.setMuted(!muted)
                   setMuted(!muted)
@@ -501,7 +536,7 @@ export function Game() {
               </button>
               <button
                 type="button"
-                aria-label="Restart level"
+                aria-label={t.hud.restartLevel}
                 onClick={() => startLevel(screen.levelIndex)}
                 className={hudButton}
               >
@@ -509,7 +544,7 @@ export function Game() {
               </button>
               <button
                 type="button"
-                aria-label="Pause"
+                aria-label={t.hud.pause}
                 onClick={togglePause}
                 className={hudButton}
               >
@@ -525,42 +560,46 @@ export function Game() {
               touchMode ? 'top-40 sm:top-20' : 'top-36',
             )}
           >
-            {touchMode && 'Hold your corner to blast. '}
-            {level.hint}
+            {touchMode && `${t.hud.holdCorner} `}
+            {t.levels[level.id].hint}
           </p>
 
           {paused && (
-            <Panel title="Paused">
+            <Panel title={t.paused.title}>
               <PanelButton primary onClick={togglePause}>
-                Keep tooting
+                {t.paused.resume}
               </PanelButton>
               <PanelButton onClick={() => startLevel(screen.levelIndex)}>
-                Restart
+                {t.paused.restart}
               </PanelButton>
-              <PanelButton onClick={goToMenu}>Menu</PanelButton>
+              <PanelButton onClick={goToMenu}>{t.paused.menu}</PanelButton>
             </Panel>
           )}
 
           {result && (
-            <Panel title="Canal cleared!">
+            <Panel title={t.result.title}>
               <div className="flex flex-col items-center gap-3">
-                <Stars count={result.stars} />
+                <Stars count={result.stars} t={t} />
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                  <dt>Time (par {formatTime(LEVELS[result.levelIndex].par)})</dt>
-                  <dd className="text-right font-bold tabular-nums">
-                    {formatTime(result.time)}
+                  <dt>
+                    {t.result.time(
+                      formatTime(LEVELS[result.levelIndex].par, t.locale),
+                    )}
+                  </dt>
+                  <dd className="text-end font-bold tabular-nums">
+                    {formatTime(result.time, t.locale)}
                   </dd>
-                  <dt>Cans</dt>
-                  <dd className="text-right font-bold tabular-nums">
-                    {result.cans}/{result.totalCans}
+                  <dt>{t.result.cans}</dt>
+                  <dd className="text-end font-bold tabular-nums">
+                    {formatNumber(`${result.cans}/${result.totalCans}`, t.locale)}
                   </dd>
-                  <dt>Harmonies</dt>
-                  <dd className="text-right font-bold tabular-nums">
-                    {result.harmonies}
+                  <dt>{t.result.harmonies}</dt>
+                  <dd className="text-end font-bold tabular-nums">
+                    {formatNumber(result.harmonies, t.locale)}
                   </dd>
-                  <dt>Wipeouts</dt>
-                  <dd className="text-right font-bold tabular-nums">
-                    {result.wipeouts}
+                  <dt>{t.result.wipeouts}</dt>
+                  <dd className="text-end font-bold tabular-nums">
+                    {formatNumber(result.wipeouts, t.locale)}
                   </dd>
                 </dl>
               </div>
@@ -569,13 +608,13 @@ export function Game() {
                   primary
                   onClick={() => startLevel(result.levelIndex + 1)}
                 >
-                  Next canal
+                  {t.result.nextLevel}
                 </PanelButton>
               )}
               <PanelButton onClick={() => startLevel(result.levelIndex)}>
-                Go again
+                {t.result.again}
               </PanelButton>
-              <PanelButton onClick={goToMenu}>Menu</PanelButton>
+              <PanelButton onClick={goToMenu}>{t.result.menu}</PanelButton>
             </Panel>
           )}
         </>

@@ -9,7 +9,7 @@ import {
 } from '../../online/protocol'
 import type { OnlineSession, SessionError } from '../../online/session'
 import { LEVELS } from '../engine/levels'
-import { formatNumber, type Messages } from '../i18n'
+import { formatNumber, setLinkLocale, type Messages } from '../i18n'
 import { BeanFace } from './bean-face'
 import { Panel, PanelButton } from './panel'
 
@@ -155,6 +155,7 @@ function RoomPanel({
   const copyLink = async () => {
     const link = new URL(window.location.href)
     link.search = `?room=${room.code}`
+    setLinkLocale(link, t.locale)
     try {
       await navigator.clipboard.writeText(link.href)
       setCopied(true)

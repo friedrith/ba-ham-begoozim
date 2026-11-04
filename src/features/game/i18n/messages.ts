@@ -10,6 +10,18 @@ export type LevelText = { name: string; blurb: string; hint: string }
 export type SeatText = { name: string; key: string }
 
 /**
+ * What a link shows when it's pasted into a chat. `headline` and `badge` go on the
+ * picture, where Persian only wraps at a `\n` and can't end a line with punctuation.
+ */
+export type LinkPreviewText = {
+  title: string
+  description: string
+  alt: string
+  headline: string
+  badge: string
+}
+
+/**
  * Everything a player can read. Numbers reach these strings already localized, so a
  * function's arguments are always strings. Text passed to `RichText` may use
  * `**strong**` and `` `key` ``.
@@ -23,6 +35,7 @@ export type Messages = {
   title: string
   menuTitle: string
   tagline: string
+  linkPreview: { game: LinkPreviewText; invite: LinkPreviewText }
   menu: {
     levels: string
     howToPlay: string

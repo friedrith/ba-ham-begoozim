@@ -1,6 +1,12 @@
 import { useCallback, useLayoutEffect, useState } from 'react'
 
-import { loadLocale, MESSAGES, saveLocale, type Locale } from './index'
+import {
+  loadLocale,
+  MESSAGES,
+  saveLocale,
+  setLinkLocale,
+  type Locale,
+} from './index'
 
 /**
  * The server renders `<html lang="en">` and no game at all, so choosing the language in
@@ -14,6 +20,11 @@ export function useLocale() {
     const root = document.documentElement
     root.lang = t.locale
     root.dir = t.dir
+
+    // Link previews can't see the saved language, so a copied address has to carry it.
+    const url = new URL(window.location.href)
+    setLinkLocale(url, t.locale)
+    window.history.replaceState(window.history.state, '', url)
 
     const syncTitle = () => {
       if (document.title !== t.title) document.title = t.title

@@ -40,7 +40,7 @@ The test suite runs a bot through every level, so a course it can't finish fails
 Harder levels will probably need a better bot in `engine/autopilot.ts`. It must
 not become easier to pass by weakening that test.
 
-**Done when** the last level is clearly harder than `The Boiler Room`, and at
+**Done when** the last level is clearly harder than `Noruz Nightmare`, and at
 least one level uses a theme and a hazard that don't exist today.
 
 ## 4. iPad version (touch)

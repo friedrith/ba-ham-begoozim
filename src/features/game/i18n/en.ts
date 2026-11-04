@@ -205,9 +205,9 @@ export const en: Messages = {
       hint: 'Front beans push you backward. Use them to brake and spin on the spot.',
     },
     'boiler-room': {
-      name: 'The Boiler Room',
+      name: 'Noruz Nightmare',
       blurb:
-        'Pilot lights give you a boost. Chaharshanbe Suri bonfires do not. Learn which is which.',
+        'New year, new burns. Pilot lights give you a boost. Chaharshanbe Suri bonfires do not.',
       hint: 'Blasting next to a pilot light ignites you for a huge boost. Whoosh.',
     },
     'grout-line': {
@@ -217,9 +217,9 @@ export const en: Messages = {
       hint: 'Tap instead of holding. Small blasts keep you off the walls.',
     },
     'plughole-parade': {
-      name: 'Plughole Parade',
+      name: 'Ghormeh Sabzi Aftermath',
       blurb:
-        'Every drain in the building is open. The safe line is one bathtub wide.',
+        'Everyone had seconds of ghormeh sabzi, and now every drain in the building is open. The safe line is one bathtub wide.',
       hint: 'Whirlpools drag you in and sling you sideways. Blast early, not when you are circling.',
     },
     'sewer-slalom': {

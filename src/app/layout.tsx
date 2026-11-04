@@ -33,7 +33,8 @@ const vazirmatn = Vazirmatn({
   preload: false,
 })
 
-const title = 'Ba Ham Begoozim'
+const siteName = 'Ba Ham Begoozim'
+const title = `${siteName} — Co-op Baked Bean Bathtub Game`
 const description =
   'A co-op browser game: four baked beans steer one bathtub by blasting in harmony. Play together on the same device or remotely online.'
 
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: '/',
-    siteName: title,
+    siteName,
     title,
     description,
   },

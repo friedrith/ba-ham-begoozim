@@ -30,11 +30,11 @@ Deployment stays with Vercel. Actions only checks the code.
 There are three levels today. Add more with a steadily rising difficulty curve,
 then introduce original content once the existing hazards are used up.
 
-- [ ] **Harder levels:** new courses using the existing hazards, with narrower
+- [x] **Harder levels:** new courses using the existing hazards, with narrower
       channels, tighter pars, and hazards combined in tougher ways
-- [ ] **New content:** new themes (`Theme`) and new hazards (`LevelItem`), each
+- [x] **New content:** new themes (`Theme`) and new hazards (`LevelItem`), each
       with its own rendering, sound and a level that teaches it
-- [ ] Rework the menu so it stays readable with many levels
+- [x] Rework the menu so it stays readable with many levels
 
 The test suite runs a bot through every level, so a course it can't finish fails.
 Harder levels will probably need a better bot in `engine/autopilot.ts`. It must

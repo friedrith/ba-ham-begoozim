@@ -4,7 +4,7 @@ export const en: Messages = {
   locale: 'en',
   dir: 'ltr',
   languageName: 'English',
-  title: 'Toot Canal',
+  title: 'Ba Ham Begoozim',
   menuTitle: 'Ba Ham Begoozim',
   tagline: 'Four beans. One bathtub. No engine.',
   menu: {

@@ -35,6 +35,10 @@ describe('translations', () => {
     )
   })
 
+  test('the English tab title is the game name', () => {
+    expect(en.title).toBe(en.menuTitle)
+  })
+
   test('languages have the same keys', () => {
     expect(shape(fa)).toEqual(shape(en))
     expect(fa.seats).toHaveLength(SEATS.length)

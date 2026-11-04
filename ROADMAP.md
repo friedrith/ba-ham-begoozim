@@ -19,7 +19,7 @@ Nothing checks a PR today. The scripts already exist, so this only needs wiring.
 - [x] Run on every PR and on pushes to `master`, using Bun
 - [x] Run `bun run ci` (lint and format check), `bun run typecheck`, `bun test`
       and `bun run build`
-- [ ] Make the checks required before merging to `master`
+- [x] Make the checks required before merging to `master`
 
 Deployment stays with Vercel. Actions only checks the code.
 

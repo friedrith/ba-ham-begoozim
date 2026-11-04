@@ -1,0 +1,35 @@
+{
+  "name": "ba-ham-begoozim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Toot Canal — a couch co-op browser game: four baked beans steer one bathtub by blasting in harmony",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "bun test",
+    "format": "oxfmt .",
+    "lint": "oxlint",
+    "check": "oxlint --fix && oxfmt .",
+    "ci": "oxlint && oxfmt --check .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.479.0",
+    "next": "16.0.10",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.4",
+    "@types/bun": "^1.3.0",
+    "@types/node": "24.1.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "tailwindcss": "^4.1.4",
+    "typescript": "5.9.2"
+  }
+}

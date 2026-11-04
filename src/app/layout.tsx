@@ -33,10 +33,23 @@ const vazirmatn = Vazirmatn({
   preload: false,
 })
 
+const title = 'Ba Ham Begoozim'
+const description =
+  'A co-op browser game: four baked beans steer one bathtub by blasting in harmony. Play together on the same device or remotely online.'
+
 export const metadata: Metadata = {
-  title: 'Ba Ham Begoozim',
-  description:
-    'A couch co-op browser game: four baked beans steer one bathtub by blasting in harmony.',
+  metadataBase: new URL('https://ba-ham-begoozim.vercel.app'),
+  title,
+  description,
+  // The preview image itself comes from opengraph-image.tsx.
+  openGraph: {
+    type: 'website',
+    url: '/',
+    siteName: title,
+    title,
+    description,
+  },
+  twitter: { card: 'summary_large_image' },
 }
 
 export const viewport: Viewport = {

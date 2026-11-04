@@ -55,6 +55,7 @@ import {
 import { isTextField, Menu, Stars } from './menu'
 import { JoinRoomPanel, normalizeCode, OnlineEntry } from './online-entry'
 import { Panel, PanelButton } from './panel'
+import { PlayersOnline } from './players-online'
 import { ShareButton } from './share-button'
 
 const KEY_SEATS: Record<string, number[]> = {
@@ -648,6 +649,7 @@ export function Game() {
               />
             )
           }
+          players={ROOMS_URL && <PlayersOnline t={t} url={ROOMS_URL} />}
         />
       )}
 

@@ -56,6 +56,8 @@ export type RoomHost = {
   save: (room: SavedRoom) => void
   /** The host calls `tick` often while this is on. Off lets the room hibernate. */
   setTicking: (on: boolean) => void
+  /** Tells whatever keeps the total how many people are connected to this room. */
+  reportPlayers: (code: string, count: number) => void
 }
 
 type Player = { number: number; goneAt: number | null; name?: string }
@@ -105,6 +107,8 @@ export class Room {
   private lastInputAt = 0
   private wasRunning = false
   private lastSeats = ''
+  /** Unknown after a reset, when the count may still be holding this room's players. */
+  private lastReported: number | null = null
   private largestGap = 0
   private gapThisSecond = 0
   private budgets = new WeakMap<Peer, { second: number; count: number }>()
@@ -170,6 +174,12 @@ export class Room {
     this.announce()
     this.save()
     this.syncTicking()
+  }
+
+  /** Also for the host to repeat now and then, in case a report went missing. */
+  reportPlayers() {
+    this.lastReported = this.connected()
+    this.host.reportPlayers(this.saved.code, this.lastReported)
   }
 
   tick() {
@@ -463,6 +473,14 @@ export class Room {
       const player = peer.token ? this.saved.players[peer.token] : null
       if (player) this.send(peer, { t: 'room', ...view, you: player.number })
     }
+    // Everyone arriving or leaving announces, so this needn't be called from each place.
+    if (this.connected() !== this.lastReported) this.reportPlayers()
+  }
+
+  /** People, not sockets: a rejoin's old socket can still be open for a moment. */
+  private connected() {
+    const tokens = this.host.peers().map((peer) => peer.token)
+    return new Set(tokens.filter((token) => token !== null)).size
   }
 
   private broadcast(message: ServerMessage) {

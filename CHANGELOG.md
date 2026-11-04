@@ -10,6 +10,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - README and metadata base use the new domain, gooz.zendegi.io, and the README shows the game on a phone ([#20](https://github.com/friedrith/ba-ham-begoozim/pull/20)).
 
+### Fixed
+
+- The menu no longer scrolls sideways on desktop ([#24](https://github.com/friedrith/ba-ham-begoozim/pull/24)).
+
 ## [0.1.0] - 2026-11-04
 
 First version of the game.

@@ -85,7 +85,10 @@ export type Messages = {
     title: string
     intro: string
     create: string
+    or: string
+    joinRoom: string
     join: string
+    cancel: string
     codeLabel: string
     connecting: string
     notFound: string

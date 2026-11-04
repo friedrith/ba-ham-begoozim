@@ -44,7 +44,7 @@ import {
   sessionErrorText,
 } from './lobby'
 import { isTextField, Menu, Stars } from './menu'
-import { normalizeCode, OnlineEntry } from './online-entry'
+import { JoinRoomPanel, normalizeCode, OnlineEntry } from './online-entry'
 import { Panel, PanelButton } from './panel'
 
 const KEY_SEATS: Record<string, number[]> = {
@@ -190,6 +190,8 @@ export function Game() {
   const [muted, setMuted] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const closeFeedback = useCallback(() => setFeedbackOpen(false), [])
+  const [joinOpen, setJoinOpen] = useState(false)
+  const closeJoin = useCallback(() => setJoinOpen(false), [])
   const [result, setResult] = useState<Result | null>(null)
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [touchMode, setTouchMode] = useState(startsInTouchMode)
@@ -603,13 +605,31 @@ export function Game() {
           onLocaleChange={setLocale}
           onFeedback={() => setFeedbackOpen(true)}
           online={
-            ROOMS_URL && <OnlineEntry t={t} url={ROOMS_URL} onEnter={enterRoom} />
+            ROOMS_URL && (
+              <OnlineEntry
+                t={t}
+                url={ROOMS_URL}
+                onEnter={enterRoom}
+                onJoin={() => setJoinOpen(true)}
+              />
+            )
           }
         />
       )}
 
       {screen.name === 'menu' && feedbackOpen && (
         <FeedbackPanel t={t} onClose={closeFeedback} />
+      )}
+
+      {screen.name === 'menu' && joinOpen && (
+        <JoinRoomPanel
+          t={t}
+          onEnter={(code) => {
+            closeJoin()
+            enterRoom(code)
+          }}
+          onClose={closeJoin}
+        />
       )}
 
       {screen.name === 'online' && session && !inOnlineRace && !online?.error && (

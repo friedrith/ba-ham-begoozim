@@ -112,6 +112,7 @@ const host: RoomHost = {
   setTicking: (on) => {
     ticking = on
   },
+  reportPlayers: () => {},
 }
 
 const isTicking = () => ticking

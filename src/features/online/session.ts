@@ -7,6 +7,7 @@ import {
   type GameEvent,
   type World,
 } from '../game/engine/world'
+import type { ShoutId } from '../game/shouts'
 import { noStickers, type BeanStickers } from '../game/stickers'
 import { createTally, tallyEvent, type Tally } from '../game/tally'
 import { dropOldInputs, forecast, type OwnInput } from './predict'
@@ -41,8 +42,19 @@ const SMOOTHING = 18
 /** Past this the tub really has gone somewhere else, like a respawn. */
 const SNAP_DISTANCE = 200
 const SNAP_ANGLE = 1
+/** How long a shout stays on screen, and how many fit there at once. */
+const SHOUT_MS = 3000
+const MAX_SHOUTS = 3
 
 export type SessionError = RoomError | 'unreachable'
+
+export type HeardShout = {
+  /** Stays the same for as long as this shout is on screen. */
+  key: number
+  from: number
+  id: ShoutId
+  until: number
+}
 
 export type SessionState = {
   status: 'connecting' | 'open' | 'reconnecting' | 'closed'
@@ -52,6 +64,8 @@ export type SessionState = {
   lostSeat: number | null
   rtt: number
   tickGap: number
+  /** Oldest first. Includes this player's own, once the room has passed them on. */
+  shouts: HeardShout[]
 }
 
 /** The part of a WebSocket used here, so tests and fake lag can stand in for one. */
@@ -119,7 +133,9 @@ export class OnlineSession {
     lostSeat: null,
     rtt: 0,
     tickGap: 0,
+    shouts: [],
   }
+  private nextShoutKey = 0
   private listeners = new Set<() => void>()
   private readonly now: () => number
   private readonly createSocket: (url: string) => SocketLike
@@ -188,6 +204,11 @@ export class OnlineSession {
   pump() {
     if (this.state.status === 'closed') return
     const now = this.now()
+    if (this.state.shouts.some((shout) => shout.until <= now)) {
+      this.update({
+        shouts: this.state.shouts.filter((shout) => shout.until > now),
+      })
+    }
     const socket = this.socket
     if (!socket) {
       if (now >= this.reconnectAt) this.open()
@@ -311,6 +332,10 @@ export class OnlineSession {
     this.send({ t: 'stickers', stickers })
   }
 
+  shout(id: ShoutId) {
+    this.send({ t: 'shout', id })
+  }
+
   leave() {
     this.send({ t: 'leave' })
     this.close()
@@ -414,6 +439,19 @@ export class OnlineSession {
       case 'snap':
         this.snap(message.s, message.w, message.ev)
         break
+      case 'shout':
+        this.update({
+          shouts: [
+            ...this.state.shouts,
+            {
+              key: this.nextShoutKey++,
+              from: message.from,
+              id: message.id,
+              until: this.now() + SHOUT_MS,
+            },
+          ].slice(-MAX_SHOUTS),
+        })
+        break
       case 'error':
         this.update({ error: message.code })
         break
@@ -467,7 +505,11 @@ export class OnlineSession {
       this.resetPrediction()
       if (view.phase === 'race') this.burstLeft = PING_BURST
     }
-    this.update({ room: view, lostSeat })
+    this.update({
+      room: view,
+      lostSeat,
+      shouts: raceChanged ? [] : this.state.shouts,
+    })
     this.flushHeld()
   }
 

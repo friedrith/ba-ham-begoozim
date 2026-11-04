@@ -51,6 +51,16 @@ export const en: Messages = {
     seatPad: (seat) => `${seat.name} bean, key ${seat.key}`,
     seatPadTouch: (seat) => `${seat.name} bean`,
     holdCorner: 'Hold your corner to blast.',
+    shout: 'Shout to your team',
+  },
+  shouts: {
+    more: 'Fart more!',
+    stop: 'Stop!',
+    together: 'Together!',
+    left: 'Left!',
+    right: 'Right!',
+    sorry: 'Sorry!',
+    nice: 'Nice one!',
   },
   paused: {
     title: 'Paused',

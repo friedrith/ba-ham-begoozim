@@ -1,6 +1,7 @@
 import { LEVELS } from '../game/engine/levels'
 import { SNAPSHOT_LAYOUT, type Snapshot } from '../game/engine/snapshot'
 import type { GameEvent } from '../game/engine/world'
+import { isShoutId, SHOUT_IDS, type ShoutId } from '../game/shouts'
 import { STICKER_IDS, type StickerId } from '../game/stickers'
 
 /** Bump when messages change in a way the derived part below can't see. */
@@ -17,10 +18,11 @@ function hash(text: string) {
 /**
  * The game and the room service deploy separately, so for a moment they can disagree.
  * Levels are part of this because a snapshot's length depends on what a level contains.
- * Stickers are because a client can't draw one it has never heard of.
+ * Stickers are because a client can't draw one it has never heard of, and shouts because
+ * it can't say one.
  */
 export const PROTOCOL = `${PROTOCOL_VERSION}-${hash(
-  SNAPSHOT_LAYOUT + JSON.stringify(LEVELS) + STICKER_IDS.join(),
+  SNAPSHOT_LAYOUT + JSON.stringify(LEVELS) + STICKER_IDS.join() + SHOUT_IDS.join(),
 )}`
 
 export const MAX_MESSAGE_LENGTH = 512
@@ -65,12 +67,15 @@ export type ClientMessage =
   | { t: 'name'; name: string }
   /** One list per seat. Each only shows while its sender owns that seat. */
   | { t: 'stickers'; stickers: StickerId[][] }
+  | { t: 'shout'; id: ShoutId }
 
 export type ServerMessage =
   /** `g` is the room's largest gap between ticks over the last second, in ms. */
   | { t: 'pong'; c: number; s: number; g: number }
   | ({ t: 'room' } & RoomView)
   | { t: 'snap'; s: number; w: Snapshot; ev: GameEvent[] }
+  /** `from` is the player's number, as in `SeatView.owner`. */
+  | { t: 'shout'; from: number; id: ShoutId }
   | { t: 'error'; code: RoomError }
 
 export type RoomError = 'update' | 'full' | 'missing' | 'replaced'
@@ -138,6 +143,8 @@ export function parseClientMessage(text: string): ClientMessage | null {
       return typeof message.name === 'string' ? (message as ClientMessage) : null
     case 'stickers':
       return Array.isArray(message.stickers) ? (message as ClientMessage) : null
+    case 'shout':
+      return isShoutId(message.id) ? (message as ClientMessage) : null
     case 'lobby':
     case 'leave':
       return message as ClientMessage

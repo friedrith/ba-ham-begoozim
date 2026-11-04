@@ -17,6 +17,7 @@ import {
   newRoom,
   Room,
   SEAT_HOLD_MS,
+  SHOUT_GAP_MS,
   type Peer,
   type RoomHost,
   type SavedRoom,
@@ -229,6 +230,48 @@ describe('stickers', () => {
     const a = join('a')
     room.receive(a, JSON.stringify({ t: 'stickers', stickers: 'duck' }))
     expect(a.closed).toBe(CLOSE_ABUSE)
+  })
+})
+
+function shoutsOf(peer: TestPeer) {
+  return peer.received.filter((message) => message.t === 'shout')
+}
+
+describe('shouts', () => {
+  test('everyone in the race hears who shouted what', () => {
+    const a = join('a')
+    const b = join('b')
+    startRacing(a)
+    say(b, { t: 'shout', id: 'stop' })
+    expect(shoutsOf(a)).toEqual([{ t: 'shout', from: 2, id: 'stop' }])
+    expect(shoutsOf(b)).toEqual([{ t: 'shout', from: 2, id: 'stop' }])
+  })
+
+  test('nobody can shout outside a race', () => {
+    const a = join('a')
+    say(a, { t: 'shout', id: 'stop' })
+    expect(shoutsOf(a)).toEqual([])
+  })
+
+  test('mashing a button only gets through now and then', () => {
+    const a = join('a')
+    const b = join('b')
+    startRacing(a)
+    say(a, { t: 'shout', id: 'more' })
+    say(a, { t: 'shout', id: 'more' })
+    say(b, { t: 'shout', id: 'nice' })
+    expect(shoutsOf(a).map((shout) => shout.id)).toEqual(['more', 'nice'])
+    now += SHOUT_GAP_MS
+    say(a, { t: 'shout', id: 'more' })
+    expect(shoutsOf(a)).toHaveLength(3)
+  })
+
+  test('words the game doesn’t have are refused', () => {
+    const a = join('a')
+    startRacing(a)
+    room.receive(a, JSON.stringify({ t: 'shout', id: 'anything at all' }))
+    expect(a.closed).toBe(CLOSE_ABUSE)
+    expect(shoutsOf(a)).toEqual([])
   })
 })
 

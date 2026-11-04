@@ -1,7 +1,7 @@
 'use client'
 
 import { clsx } from 'clsx'
-import { Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
+import { Megaphone, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import {
   useCallback,
   useEffect,
@@ -63,6 +63,7 @@ import { JoinRoomPanel, normalizeCode, OnlineEntry } from './online-entry'
 import { Panel, PanelButton } from './panel'
 import { PlayersOnline } from './players-online'
 import { ShareButton } from './share-button'
+import { ShoutButtons, ShoutFeed } from './shouts'
 import { StickerPanel } from './sticker-panel'
 
 const KEY_SEATS: Record<string, number[]> = {
@@ -223,6 +224,8 @@ export function Game() {
   const [result, setResult] = useState<Result | null>(null)
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [touchMode, setTouchMode] = useState(startsInTouchMode)
+  /** Touch only: the pads fill a phone's screen, so the shout buttons wait to be asked. */
+  const [shoutsOpen, setShoutsOpen] = useState(false)
   const [session, setSession] = useState<OnlineSession | null>(null)
   const [debug] = useState(() =>
     new URLSearchParams(window.location.search).has('debug'),
@@ -852,6 +855,17 @@ export function Game() {
               </span>
             </div>
             <div className="pointer-events-auto flex gap-2">
+              {inOnlineRace && touchMode && (
+                <button
+                  type="button"
+                  aria-label={t.hud.shout}
+                  aria-expanded={shoutsOpen}
+                  onClick={() => setShoutsOpen(!shoutsOpen)}
+                  className={clsx(hudButton, shoutsOpen && 'brightness-75')}
+                >
+                  <Megaphone className="size-5" />
+                </button>
+              )}
               <button
                 type="button"
                 aria-label={muted ? t.hud.unmute : t.hud.mute}
@@ -900,8 +914,12 @@ export function Game() {
             {t.levels[level.id].hint}
           </p>
 
-          {inOnlineRace && online && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-20 flex flex-col items-center gap-2 px-4">
+          {inOnlineRace && online && room && session && (
+            <div
+              // On a narrow screen the middle has to clear the bottom corners' pads.
+              className="pointer-events-none absolute inset-x-0 bottom-32 flex flex-col items-center gap-2 px-4 sm:bottom-20"
+            >
+              <ShoutFeed t={t} room={room} shouts={online.shouts} />
               {online.status === 'reconnecting' && (
                 <output className="bg-sauce border-ink text-cream rounded-xl border-2 px-3 py-1 text-sm font-bold">
                   {t.online.reconnecting}
@@ -911,6 +929,9 @@ export function Game() {
                 <output className="bg-cream border-ink rounded-xl border-2 px-3 py-1 text-center text-sm font-bold">
                   {t.online.seatLost(t.seats[online.lostSeat].name)}
                 </output>
+              )}
+              {(!touchMode || shoutsOpen) && !paused && !result && (
+                <ShoutButtons t={t} session={session} />
               )}
             </div>
           )}

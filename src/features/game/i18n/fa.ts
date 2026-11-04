@@ -55,6 +55,16 @@ export const fa: Messages = {
     seatPad: (seat) => `لوبیای ${seat.name}، کلید ${seat.key}`,
     seatPadTouch: (seat) => `لوبیای ${seat.name}`,
     holdCorner: 'گوشهٔ خودت رو نگه دار تا بگوزی.',
+    shout: 'داد بزن سر تیمت',
+  },
+  shouts: {
+    more: 'بیشتر بگوز!',
+    stop: 'وایسا!',
+    together: 'با هم!',
+    left: 'چپ!',
+    right: 'راست!',
+    sorry: 'ببخشید!',
+    nice: 'دمت گرم!',
   },
   paused: {
     title: 'یه نفس بگیر',

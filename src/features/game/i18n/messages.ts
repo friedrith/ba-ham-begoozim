@@ -1,4 +1,5 @@
 import type { RankId } from '../progress'
+import type { ShoutId } from '../shouts'
 import type { StickerId } from '../stickers'
 import type { AwardId } from '../tally'
 
@@ -73,7 +74,11 @@ export type Messages = {
     seatPadTouch: (seat: SeatText) => string
     /** Shown before the level hint and the menu instructions in touch mode. */
     holdCorner: string
+    /** Spoken name of the buttons that shout at the team, and of the one that shows them. */
+    shout: string
   }
+  /** What online players can shout at each other in a race. Keep them short. */
+  shouts: Record<ShoutId, string>
   paused: { title: string; resume: string; restart: string; menu: string }
   result: {
     title: string

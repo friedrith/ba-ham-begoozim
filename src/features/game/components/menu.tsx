@@ -178,11 +178,12 @@ export function Menu({
           aria-label={t.menu.levels}
           className="bg-cream border-ink shadow-ink flex flex-col gap-3 rounded-2xl border-[3px] p-3 shadow-[0_5px_0] md:p-4"
         >
+          {/* Relative so it clips the absolute sr-only text of the levels out of view. */}
           <ol
             ref={sliderRef}
             dir={t.dir}
             onScroll={syncSelected}
-            className="flex touch-pan-x touch-pan-y snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain [&::-webkit-scrollbar]:hidden"
+            className="relative flex touch-pan-x touch-pan-y snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto overscroll-x-contain [&::-webkit-scrollbar]:hidden"
           >
             {LEVELS.map((level, index) => {
               const text = t.levels[level.id]

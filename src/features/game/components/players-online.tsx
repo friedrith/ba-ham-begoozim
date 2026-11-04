@@ -30,9 +30,31 @@ export function PlayersOnline({ t, url }: { t: Messages; url: string }) {
 
   if (players === null || players < MIN_SHOWN) return null
   return (
-    <p className="bg-mustard border-ink flex items-center gap-1.5 rounded-full border-2 px-3 py-0.5 text-sm font-bold tabular-nums">
-      <Users aria-hidden="true" className="size-4" />
-      {t.online.playersNow(formatNumber(players, t.locale))}
+    <p className="motion-safe:animate-players-pop pointer-events-none fixed end-3 bottom-3 text-sm font-bold tabular-nums">
+      {/* Keyed by the count, so the flash plays again each time it changes. */}
+      <span
+        key={`glow-${players}`}
+        aria-hidden="true"
+        className="bg-mustard motion-safe:animate-players-glow absolute inset-0 rounded-full opacity-0"
+      />
+      <span className="bg-mustard border-ink shadow-ink relative flex items-center gap-1.5 overflow-hidden rounded-full border-2 px-3 py-0.5 shadow-[0_3px_0]">
+        <span
+          key={`sweep-${players}`}
+          aria-hidden="true"
+          className="motion-safe:animate-players-sweep absolute inset-y-0 left-0 w-1/3 bg-linear-to-r from-transparent via-white to-transparent opacity-0"
+        />
+        <span aria-hidden="true" className="relative flex size-2.5">
+          <span className="bg-gas absolute inset-0 rounded-full opacity-75 motion-safe:animate-ping" />
+          <span className="bg-gas border-ink relative size-full rounded-full border" />
+        </span>
+        <Users aria-hidden="true" className="relative size-4" />
+        <span
+          key={`count-${players}`}
+          className="motion-safe:animate-players-bump relative"
+        >
+          {t.online.playersNow(formatNumber(players, t.locale))}
+        </span>
+      </span>
     </p>
   )
 }

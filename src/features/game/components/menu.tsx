@@ -34,8 +34,8 @@ export function Menu({ progress, onPlay }: MenuProps) {
     <div className="bg-ink/45 absolute inset-0 overflow-y-auto">
       <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-center gap-5 px-4 py-8">
         <header className="flex flex-col items-center gap-1 text-center">
-          <h1 className="font-display text-sauce text-6xl leading-none [-webkit-text-stroke:2px_var(--color-ink)] [paint-order:stroke_fill] md:text-8xl">
-            Toot Canal
+          <h1 className="font-display text-sauce pb-[0.15em] text-6xl leading-none [-webkit-text-stroke:2px_var(--color-ink)] [paint-order:stroke_fill] md:text-[5.5rem]">
+            Ba Ham Begoozim
           </h1>
           <p className="bg-cream border-ink rounded-full border-2 px-4 py-1 text-sm font-bold md:text-base">
             Four beans. One bathtub. No engine.

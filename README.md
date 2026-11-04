@@ -4,6 +4,8 @@ A couch co-op browser game. Four baked beans share one clawfoot bathtub, and the
 only engine on board is what the beans had for lunch. Everyone blasts from their
 own corner, so steering takes teamwork.
 
+Play it at <https://ba-ham-begoozim.vercel.app>.
+
 ## Running it
 
 ```bash

@@ -4,6 +4,7 @@ import {
   buildRelease,
   fragmentFiles,
   fragmentToText,
+  nextVersion,
   parseUnreleased,
   prFromSubject,
   sectionOf,
@@ -90,6 +91,21 @@ describe('parseUnreleased', () => {
     expect(() => parseUnreleased('### Other\n\n- Entry.\n')).toThrow(
       "Can't read this line",
     )
+  })
+})
+
+describe('nextVersion', () => {
+  test('bumps the minor version when something was added', () => {
+    const entries = [
+      { section: 'Fixed', text: 'A fix.' },
+      { section: 'Added', text: 'A feature.' },
+    ]
+    expect(nextVersion('0.1.3', entries)).toBe('0.2.0')
+  })
+
+  test('bumps the patch version otherwise', () => {
+    const entries = [{ section: 'Fixed', text: 'A fix.' }]
+    expect(nextVersion('0.1.3', entries)).toBe('0.1.4')
   })
 })
 

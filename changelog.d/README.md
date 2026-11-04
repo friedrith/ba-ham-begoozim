@@ -22,8 +22,19 @@ Preview the next release:
 bun run changelog
 ```
 
-Write it to `CHANGELOG.md`, bump `package.json` and delete the entries here:
+Then run the **Release** workflow from the Actions tab on `master` and merge the PR it
+opens. That PR writes the release to `CHANGELOG.md`, bumps `package.json` and deletes
+the entries here. Leave the version empty to work it out: minor if anything was added,
+patch otherwise.
+
+The same from a local checkout:
 
 ```bash
-bun run changelog 0.2.0
+bun run changelog auto
 ```
+
+### Setting up the workflow
+
+It needs a repository secret called `RELEASE_TOKEN`: a fine-grained personal access
+token limited to this repository, with read and write access to contents and pull
+requests. Renew it when it expires.

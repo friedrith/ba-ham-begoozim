@@ -74,6 +74,7 @@ export const en: Messages = {
     seatsTitle: 'Pick your beans',
     seatsHint: 'Tap a bean to take it. One person can work several.',
     you: 'You',
+    yourName: 'Your name',
     player: (number) => `Player ${number}`,
     empty: 'Empty',
     bot: 'Bot',

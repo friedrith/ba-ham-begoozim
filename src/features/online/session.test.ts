@@ -434,6 +434,21 @@ describe('connection trouble', () => {
     expect(a.session.getState().room?.seats[3].status).toBe('here')
   })
 
+  test('a name changed while the line is down reaches the room on reconnect', () => {
+    const { a, b } = raceWithTwo()
+    b.session.setName('Bean Queen')
+    run(200)
+    expect(a.session.getState().room?.seats[3].name).toBe('Bean Queen')
+    b.sockets[0].cut()
+    b.session.setName('Bean King')
+    run(CONNECT_TIMEOUT_MS)
+    expect(a.session.getState().room?.seats[3].name).toBe('Bean King')
+    b.sockets.at(-1)?.cut()
+    b.session.setName('')
+    run(CONNECT_TIMEOUT_MS)
+    expect(a.session.getState().room?.seats[3].name).toBeUndefined()
+  })
+
   test('a line that goes quiet counts as lost', () => {
     const { b } = raceWithTwo()
     // Whatever was still on its way vanishes, and nothing new gets through.

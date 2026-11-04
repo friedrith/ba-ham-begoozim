@@ -3,7 +3,7 @@ import { SNAPSHOT_LAYOUT, type Snapshot } from '../game/engine/snapshot'
 import type { GameEvent } from '../game/engine/world'
 
 /** Bump when messages change in a way the derived part below can't see. */
-const PROTOCOL_VERSION = 1
+const PROTOCOL_VERSION = 2
 
 function hash(text: string) {
   let value = 5381
@@ -23,12 +23,19 @@ export const PROTOCOL = `${PROTOCOL_VERSION}-${hash(
 
 export const MAX_MESSAGE_LENGTH = 512
 
+export const MAX_NAME_LENGTH = 16
+
 /** Sent as plain text and answered by the host without waking a hibernating room. */
 export const HEARTBEAT = 'hb'
 
 export type SeatStatus = 'here' | 'away' | 'bot' | 'free'
 
-export type SeatView = { owner: number | null; status: SeatStatus }
+export type SeatView = {
+  owner: number | null
+  status: SeatStatus
+  /** What the owner calls themselves, if they've said. */
+  name?: string
+}
 
 export type RoomView = {
   code: string
@@ -51,6 +58,7 @@ export type ClientMessage =
   | { t: 'lobby' }
   | { t: 'bots'; on: boolean }
   | { t: 'leave' }
+  | { t: 'name'; name: string }
 
 export type ServerMessage =
   /** `g` is the room's largest gap between ticks over the last second, in ms. */
@@ -69,6 +77,18 @@ export const CLOSE_CODES: Record<RoomError, number> = {
   replaced: 4003,
 }
 export const CLOSE_ABUSE = 4004
+
+/**
+ * Keeps the joiners Persian spelling and emoji need, but not the invisible characters
+ * that could reverse the text around a name on someone else's screen.
+ */
+export function normalizeName(text: string) {
+  const clean = text
+    .replace(/\s+/g, ' ')
+    .replace(/(?![\u200C\u200D])\p{C}/gu, '')
+    .trim()
+  return Array.from(clean).slice(0, MAX_NAME_LENGTH).join('').trim()
+}
 
 const isSeat = (value: unknown) =>
   Number.isInteger(value) && (value as number) >= 0 && (value as number) < 4
@@ -108,6 +128,8 @@ export function parseClientMessage(text: string): ClientMessage | null {
       return typeof message.level === 'string' ? (message as ClientMessage) : null
     case 'bots':
       return typeof message.on === 'boolean' ? (message as ClientMessage) : null
+    case 'name':
+      return typeof message.name === 'string' ? (message as ClientMessage) : null
     case 'lobby':
     case 'leave':
       return message as ClientMessage

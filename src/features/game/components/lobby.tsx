@@ -1,7 +1,12 @@
 import { clsx } from 'clsx'
 import { useEffect, useState } from 'react'
 
-import type { SeatView, RoomView } from '../../online/protocol'
+import {
+  MAX_NAME_LENGTH,
+  normalizeName,
+  type SeatView,
+  type RoomView,
+} from '../../online/protocol'
 import type { OnlineSession, SessionError } from '../../online/session'
 import { LEVELS } from '../engine/levels'
 import { formatNumber, type Messages } from '../i18n'
@@ -9,6 +14,23 @@ import { BeanFace } from './bean-face'
 import { Panel, PanelButton } from './panel'
 
 const COPIED_MS = 2000
+const NAME_KEY = 'ba-ham-begoozim:player-name'
+
+export function loadPlayerName() {
+  try {
+    return window.localStorage.getItem(NAME_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function savePlayerName(name: string) {
+  try {
+    window.localStorage.setItem(NAME_KEY, name)
+  } catch {
+    // Private windows can refuse storage. The name still lasts as long as the room.
+  }
+}
 
 /** What to call whoever is in a seat. */
 export function seatLabel(t: Messages, seat: SeatView, you: number) {
@@ -16,7 +38,7 @@ export function seatLabel(t: Messages, seat: SeatView, you: number) {
   if (seat.status === 'bot') return t.online.bot
   if (seat.status === 'free') return t.online.empty
   if (seat.status === 'away') return t.online.away
-  return t.online.player(formatNumber(seat.owner ?? 0, t.locale))
+  return seat.name ?? t.online.player(formatNumber(seat.owner ?? 0, t.locale))
 }
 
 export function sessionErrorText(t: Messages, error: SessionError) {
@@ -34,6 +56,43 @@ export function sessionErrorText(t: Messages, error: SessionError) {
     default:
       return t.online.unreachable
   }
+}
+
+/** Sent as it's typed, so a race starting mid-word doesn't lose it. */
+export function NameField({
+  t,
+  you,
+  session,
+}: {
+  t: Messages
+  you: number
+  session: OnlineSession
+}) {
+  const [draft, setDraft] = useState(session.getName)
+
+  return (
+    <label className="flex items-center gap-2 text-sm font-bold">
+      {t.online.yourName}
+      <input
+        dir="auto"
+        autoComplete="off"
+        enterKeyHint="done"
+        maxLength={MAX_NAME_LENGTH}
+        placeholder={t.online.player(formatNumber(you, t.locale))}
+        value={draft}
+        onChange={(event) => {
+          const name = normalizeName(event.target.value)
+          setDraft(event.target.value)
+          savePlayerName(name)
+          session.setName(name)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') event.currentTarget.blur()
+        }}
+        className="border-ink placeholder:text-ink/50 w-full min-w-0 flex-1 rounded-xl border-[3px] bg-white px-2 py-1 text-base select-text placeholder:font-normal"
+      />
+    </label>
+  )
 }
 
 export function Lobby({
@@ -107,6 +166,8 @@ function RoomPanel({
         {copied ? t.online.copied : t.online.copyLink}
       </PanelButton>
 
+      <NameField t={t} you={room.you} session={session} />
+
       <section aria-label={t.online.seatsTitle} className="flex flex-col gap-2">
         <div>
           <h3 className="font-display text-xl">{t.online.seatsTitle}</h3>
@@ -137,7 +198,7 @@ function RoomPanel({
                     <span className="block text-sm font-bold">
                       {t.seats[i].name}
                     </span>
-                    <span className="block text-xs">
+                    <span className="block truncate text-xs">
                       {seatLabel(t, seat, room.you)}
                     </span>
                   </span>

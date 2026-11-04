@@ -39,6 +39,8 @@ export type Messages = {
     totalStars: (count: string) => string
     /** Spoken name of the GitHub icon link. */
     sourceCode: string
+    /** Spoken name of the Buy Me a Coffee icon link. */
+    buyCoffee: string
   }
   hud: {
     time: string

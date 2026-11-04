@@ -96,12 +96,13 @@ few seconds. Taking the local service down mid-race is a good way to test this.
 
 ## What hasn't been tested
 
-- **Real Cloudflare, barely.** The probe has run twice, from one place, with all four
-  bots in one process. Round trips were about 50ms at the median and 100-127ms at p95.
-  Harmony was 88% both times, below the 95% seen locally, and nobody knows why yet.
-  Snapshots arrived in bursts, with a p95 gap of 115ms and a worst of 148ms, and those
-  could come from the room's timers, the network or the probe. Both runs came before
-  the fix that brought snapshots from 21 to 30 a second.
+- **Real Cloudflare, barely.** The probe has run from one place only, with all four
+  bots in one process. Over two runs of 40 trials, harmony was 98% and 95%, with 30
+  snapshots a second and round trips of about 50ms at the median and 122-134ms at p95.
+  Snapshots still arrive in bursts: about one gap in 20 reaches 100ms, and the worst
+  were 138ms and 153ms. Against a local service the same probe has a p95 gap of 39ms,
+  so the bursts aren't the probe's, but they could be the room's timers or the network.
+  Whether players feel them is for a playtest to say.
 - **Packet loss hasn't been tried.** WebSockets run over TCP, so a lost packet holds up
   everything behind it.
 - **No people have played it.** The 50ms spread in player timing is an assumption. It

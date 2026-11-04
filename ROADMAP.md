@@ -71,7 +71,7 @@ more seats.
 - [ ] Retune or scale the harmony window, which depends on near-simultaneous
       blasts and will be the first thing latency breaks. Harmony now compares
       press times, which holds up in simulation. It needs a real playtest.
-- [ ] Deploy the [room service](workers/rooms/README.md) and measure it on real
+- [x] Deploy the [room service](workers/rooms/README.md) and measure it on real
       Cloudflare
 
 Design notes:

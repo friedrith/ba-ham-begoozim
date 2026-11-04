@@ -81,6 +81,52 @@ describe('harmony', () => {
   })
 })
 
+describe('harmony across a network', () => {
+  const pressAt = (world: World, seat: number, pressedAt: number) => {
+    const held = [false, false, false, false]
+    held[seat] = true
+    const times = [null, null, null, null] as (number | null)[]
+    times[seat] = pressedAt
+    stepWorld(world, held, STEP, times)
+  }
+
+  test('presses close together count, however late one of them arrives', () => {
+    const world = startedWorld()
+    const pressed = world.clock
+    pressAt(world, REAR_LEFT, pressed)
+    for (let t = 0; t < 0.3; t += STEP) press(world, REAR_LEFT)
+    pressAt(world, REAR_RIGHT, pressed + 0.05)
+    expect(world.harmonies).toBe(1)
+  })
+
+  test('a late arrival can pair with a press made after it', () => {
+    const world = startedWorld()
+    const pressed = world.clock
+    pressAt(world, REAR_LEFT, pressed)
+    pressAt(world, REAR_RIGHT, pressed - 0.05)
+    expect(world.harmonies).toBe(1)
+  })
+
+  test('presses far apart do not count, however close they arrive', () => {
+    const world = startedWorld()
+    pressAt(world, REAR_LEFT, world.clock)
+    pressAt(world, REAR_RIGHT, world.clock - 0.2)
+    expect(world.harmonies).toBe(0)
+  })
+
+  test('the harmony bonus reaches the bean who pressed first', () => {
+    const paired = startedWorld()
+    pressAt(paired, REAR_LEFT, paired.clock)
+    pressAt(paired, REAR_RIGHT, paired.clock - 0.05)
+
+    const alone = startedWorld()
+    pressAt(alone, REAR_LEFT, alone.clock)
+    pressAt(alone, REAR_RIGHT, alone.clock - 0.2)
+
+    expect(speedAlong(paired)).toBeGreaterThan(speedAlong(alone))
+  })
+})
+
 describe('gas', () => {
   test('holding a blast runs the tank dry, then stops pushing', () => {
     const world = startedWorld()

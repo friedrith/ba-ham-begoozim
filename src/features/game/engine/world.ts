@@ -324,7 +324,7 @@ function push(world: World, seatIndex: number, amount: number) {
   world.spin += ((r.x - world.x) * fy - (r.y - world.y) * fx) / INERTIA
 }
 
-function pressSeat(world: World, index: number) {
+function pressSeat(world: World, index: number, pressedAt: number) {
   const seat = world.seats[index]
   if (seat.gas < KICK_GAS) {
     world.events.push({ type: 'empty', seat: index })
@@ -333,7 +333,7 @@ function pressSeat(world: World, index: number) {
 
   let harmony = false
   world.seats.forEach((other, i) => {
-    if (i === index || world.clock - other.lastPress >= SYNC_WINDOW) return
+    if (i === index || Math.abs(pressedAt - other.lastPress) >= SYNC_WINDOW) return
     harmony = true
     if (!other.paired) {
       other.paired = true
@@ -359,7 +359,7 @@ function pressSeat(world: World, index: number) {
 
   seat.gas -= KICK_GAS
   seat.blasting = true
-  seat.lastPress = world.clock
+  seat.lastPress = pressedAt
   seat.paired = harmony
   if (harmony) {
     seat.gas = Math.min(1, seat.gas + HARMONY_GAS)
@@ -369,11 +369,16 @@ function pressSeat(world: World, index: number) {
   world.events.push({ type: 'blast', seat: index, harmony, ignited })
 }
 
-function updateSeats(world: World, held: readonly boolean[], dt: number) {
+function updateSeats(
+  world: World,
+  held: readonly boolean[],
+  dt: number,
+  pressedAt?: readonly (number | null)[],
+) {
   const canBlast = world.status === 'racing'
   world.seats.forEach((seat, i) => {
     const wants = canBlast && Boolean(held[i])
-    if (wants && !seat.held) pressSeat(world, i)
+    if (wants && !seat.held) pressSeat(world, i, pressedAt?.[i] ?? world.clock)
     if (!wants && seat.blasting) {
       seat.blasting = false
       world.events.push({ type: 'release', seat: i })
@@ -629,7 +634,17 @@ function wipeout(world: World) {
   world.grace = RESPAWN_GRACE
 }
 
-export function stepWorld(world: World, held: readonly boolean[], dt = STEP) {
+/**
+ * `pressedAt` gives, per seat, the clock at which a press landing this step really
+ * happened. Online, presses arrive late by different amounts, so harmony has to compare
+ * when beans blasted rather than when the server heard about it.
+ */
+export function stepWorld(
+  world: World,
+  held: readonly boolean[],
+  dt = STEP,
+  pressedAt?: readonly (number | null)[],
+) {
   world.clock += dt
   world.grace = Math.max(0, world.grace - dt)
   world.bumpCooldown = Math.max(0, world.bumpCooldown - dt)
@@ -651,7 +666,7 @@ export function stepWorld(world: World, held: readonly boolean[], dt = STEP) {
     world.raceTime += dt
   }
 
-  updateSeats(world, held, dt)
+  updateSeats(world, held, dt, pressedAt)
   applyWater(world, dt)
 
   world.x += world.vx * dt

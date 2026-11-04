@@ -84,6 +84,7 @@ export type Messages = {
     seatsTitle: string
     seatsHint: string
     you: string
+    yourName: string
     player: (number: string) => string
     empty: string
     bot: string

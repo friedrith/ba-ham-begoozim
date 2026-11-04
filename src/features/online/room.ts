@@ -16,6 +16,7 @@ import {
   CLOSE_ABUSE,
   CLOSE_CODES,
   HEARTBEAT,
+  normalizeName,
   parseClientMessage,
   PROTOCOL,
   type ClientMessage,
@@ -57,7 +58,7 @@ export type RoomHost = {
   setTicking: (on: boolean) => void
 }
 
-type Player = { number: number; goneAt: number | null }
+type Player = { number: number; goneAt: number | null; name?: string }
 
 /** All that survives a reset. Tokens stay in here and never reach other players. */
 export type SavedRoom = {
@@ -235,6 +236,9 @@ export class Room {
       case 'leave':
         this.leave(token)
         break
+      case 'name':
+        this.rename(token, message.name)
+        break
       default:
         break
     }
@@ -277,6 +281,15 @@ export class Room {
     let number = 1
     while (taken.has(number)) number++
     return number
+  }
+
+  private rename(token: string, text: string) {
+    const player = this.saved.players[token]
+    const name = normalizeName(text)
+    if (!player || (player.name ?? '') === name) return
+    player.name = name
+    this.announce()
+    this.save()
   }
 
   private setSeat(token: string, seat: number, take: boolean) {
@@ -406,9 +419,11 @@ export class Room {
     return this.saved.seats.map((owner, seat) => {
       const status = this.seatStatus(seat)
       const showOwner = owner && (status === 'here' || status === 'away')
+      const player = showOwner ? this.saved.players[owner] : null
       return {
         status,
-        owner: showOwner ? (this.saved.players[owner]?.number ?? null) : null,
+        owner: player?.number ?? null,
+        name: player?.name || undefined,
       }
     })
   }

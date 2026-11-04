@@ -73,6 +73,7 @@ more seats.
       but compares press times, and four people have finished a level with it.
 - [x] Deploy the [room service](workers/rooms/README.md) and measure it on real
       Cloudflare
+- [x] Let players name themselves, in the room or from the pause menu
 
 Design notes:
 

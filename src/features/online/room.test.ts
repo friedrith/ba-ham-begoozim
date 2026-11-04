@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { LEVELS } from '../game/engine/levels'
 import { applySnapshot } from '../game/engine/snapshot'
 import { createWorld } from '../game/engine/world'
-import { PROTOCOL, type ClientMessage, type ServerMessage } from './protocol'
+import {
+  CLOSE_ABUSE,
+  MAX_NAME_LENGTH,
+  normalizeName,
+  PROTOCOL,
+  type ClientMessage,
+  type ServerMessage,
+} from './protocol'
 import {
   IDLE_RACE_MS,
   MAX_PEERS,
@@ -134,6 +141,66 @@ describe('seats', () => {
     say(b, { t: 'in', seat: 2, on: true, at: now })
     run(50)
     expect(worldSeenBy(a).seats[2].held).toBe(false)
+  })
+})
+
+describe('names', () => {
+  test('teammates see a seat’s owner by the name they chose', () => {
+    const a = join('a')
+    const b = join('b')
+    say(a, { t: 'seat', seat: 0, take: true })
+    say(a, { t: 'name', name: 'Bean Queen' })
+    expect(b.last('room')?.seats[0].name).toBe('Bean Queen')
+    say(a, { t: 'name', name: 'Bean King' })
+    expect(b.last('room')?.seats[0].name).toBe('Bean King')
+  })
+
+  test('clearing a name goes back to no name', () => {
+    const a = join('a')
+    say(a, { t: 'seat', seat: 0, take: true })
+    say(a, { t: 'name', name: 'Bean Queen' })
+    say(a, { t: 'name', name: '   ' })
+    expect(a.last('room')?.seats[0].name).toBeUndefined()
+  })
+
+  test('a name can change in the middle of a race without restarting it', () => {
+    const a = join('a')
+    say(a, { t: 'seat', seat: 0, take: true })
+    startRacing(a)
+    const raceId = a.last('room')?.raceId
+    say(a, { t: 'name', name: 'Bean Queen' })
+    expect(a.last('room')?.phase).toBe('race')
+    expect(a.last('room')?.raceId).toBe(raceId)
+    expect(a.last('room')?.seats[0].name).toBe('Bean Queen')
+  })
+
+  test('a name goes when its seat does', () => {
+    const a = join('a')
+    say(a, { t: 'seat', seat: 0, take: true })
+    say(a, { t: 'name', name: 'Bean Queen' })
+    say(a, { t: 'seat', seat: 0, take: false })
+    expect(a.last('room')?.seats[0].name).toBeUndefined()
+  })
+
+  test('saying the same name again doesn’t tell everyone again', () => {
+    const a = join('a')
+    say(a, { t: 'name', name: 'Bean Queen' })
+    const before = a.received.length
+    say(a, { t: 'name', name: ' Bean  Queen ' })
+    expect(a.received.length).toBe(before)
+  })
+
+  test('a name that isn’t text is refused', () => {
+    const a = join('a')
+    room.receive(a, JSON.stringify({ t: 'name', name: 7 }))
+    expect(a.closed).toBe(CLOSE_ABUSE)
+  })
+
+  test('names are tidied and cut to length', () => {
+    expect(normalizeName('  Bean \n Queen ')).toBe('Bean Queen')
+    expect(normalizeName('x'.repeat(40))).toBe('x'.repeat(MAX_NAME_LENGTH))
+    expect(normalizeName('a\u202Eb\u0000c')).toBe('abc')
+    expect(normalizeName('کف\u200Cصابون')).toBe('کف\u200Cصابون')
   })
 })
 

@@ -31,6 +31,10 @@ export type Messages = {
     par: (time: string) => string
     best: (time: string) => string
     play: string
+    previousLevel: string
+    nextLevel: string
+    /** `count` is already written as position out of the total, like 3/12. */
+    levelCount: (count: string) => string
     /** `count` is already written as stars out of the total, like 3/36. */
     totalStars: (count: string) => string
     /** Spoken name of the GitHub icon link. */

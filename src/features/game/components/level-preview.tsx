@@ -1,6 +1,7 @@
 import { memo } from 'react'
 
 import {
+  arrowIndices,
   buildCourse,
   indexAt,
   pointAt,
@@ -12,7 +13,11 @@ import { PALETTES } from '../render/scene'
 
 const DOT_RADIUS = 60
 const BAR_WIDTH = 45
-const MARGIN = 120
+const MARGIN = 240
+const ARROW_SPACING = 40
+const ARROW_SIZE = 70
+const ARROW_WIDTH = 32
+const ARROW_GAP = 120
 
 const DOT_COLORS: Partial<Record<LevelItem['kind'], string>> = {
   can: 'var(--color-gas)',
@@ -55,6 +60,37 @@ function Bar({ a, b }: { a: Vec; b: Vec }) {
       y2={y2}
       stroke="var(--color-ink)"
       strokeWidth={BAR_WIDTH}
+    />
+  )
+}
+
+/** A chevron on one bank pointing downstream, so the map shows which way the course runs. */
+function Arrow({
+  course,
+  index,
+  bank,
+}: {
+  course: Course
+  index: number
+  bank: number
+}) {
+  const { x, y, tx, ty, nx, ny, hw } = course.samples[index]
+  const tip = {
+    x: x + nx * bank * (hw + ARROW_GAP),
+    y: y + ny * bank * (hw + ARROW_GAP),
+  }
+  const wing = (side: number): Vec => ({
+    x: tip.x - tx * ARROW_SIZE + nx * side * ARROW_SIZE,
+    y: tip.y - ty * ARROW_SIZE + ny * side * ARROW_SIZE,
+  })
+  return (
+    <polyline
+      points={points([wing(-1), tip, wing(1)])}
+      fill="none"
+      stroke="var(--color-ink)"
+      strokeWidth={ARROW_WIDTH}
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   )
 }
@@ -146,6 +182,11 @@ export const LevelPreview = memo(function LevelPreview({
       className="border-ink aspect-[8/3] w-full rounded-xl border-[3px] rtl:-scale-x-100"
       style={{ backgroundColor: palette.bank }}
     >
+      {arrowIndices(course, ARROW_SPACING).flatMap((index) =>
+        [-1, 1].map((bank) => (
+          <Arrow key={index * bank} course={course} index={index} bank={bank} />
+        )),
+      )}
       <polygon
         points={stretch(course, 0, 1)}
         fill={palette.water}

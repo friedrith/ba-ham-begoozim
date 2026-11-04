@@ -432,17 +432,27 @@ export function Game() {
       overlayRef.current = false
       setPaused(false)
       const stars = starsFor(world)
-      setProgress(recordRun(world.level.id, stars, world.raceTime))
-      track('level_finished', {
-        level_id: world.level.id,
-        time: world.raceTime,
-        par: world.level.par,
-        stars,
-        cans: world.cansTaken,
-        total_cans: world.cans.length,
-        harmonies: world.harmonies,
-        wipeouts: world.wipeouts,
-      })
+      // Watching the bots finish an online race doesn't earn anything.
+      const onlineRoom = sessionRef.current?.getState().room
+      if (
+        !onlineRoom ||
+        onlineRoom.seats.some(({ owner }) => owner === onlineRoom.you)
+      ) {
+        setProgress(recordRun(world.level.id, stars, world.raceTime))
+      }
+      // Online races have no `level_started` yet, so counting these would skew the funnel.
+      if (screenRef.current.name === 'play') {
+        track('level_finished', {
+          level_id: world.level.id,
+          time: world.raceTime,
+          par: world.level.par,
+          stars,
+          cans: world.cansTaken,
+          total_cans: world.cans.length,
+          harmonies: world.harmonies,
+          wipeouts: world.wipeouts,
+        })
+      }
       setResult({
         levelIndex: LEVELS.indexOf(world.level),
         time: world.raceTime,

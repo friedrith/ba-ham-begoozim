@@ -4,6 +4,7 @@ import { clsx } from 'clsx'
 import { Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
+import { setInputMode, track } from '../analytics'
 import { autopilot } from '../engine/autopilot'
 import { LEVELS } from '../engine/levels'
 import {
@@ -85,6 +86,16 @@ function startsInTouchMode() {
   )
 }
 
+/** Reports a run left before the finish line. The demo behind the menu never counts. */
+function trackAbandoned(screen: Screen, world: World, reason: 'restart' | 'menu') {
+  if (screen.name !== 'play' || world.status === 'finished') return
+  track('level_abandoned', {
+    level_id: world.level.id,
+    reason,
+    race_time: world.raceTime,
+  })
+}
+
 export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [demoWorld] = useState(() => createWorld(LEVELS[0]))
@@ -117,6 +128,10 @@ export function Game() {
     soundRef.current = new Sound()
   }, [])
 
+  useEffect(() => {
+    setInputMode(touchMode ? 'touch' : 'keyboard')
+  }, [touchMode])
+
   useLayoutEffect(() => {
     tRef.current = t
     fontRef.current =
@@ -142,6 +157,8 @@ export function Game() {
 
   const startLevel = useCallback(
     (levelIndex: number) => {
+      trackAbandoned(screenRef.current, worldRef.current, 'restart')
+      track('level_started', { level_id: LEVELS[levelIndex].id })
       soundRef.current?.unlock()
       soundRef.current?.stopAll()
       worldRef.current = createWorld(LEVELS[levelIndex])
@@ -158,6 +175,7 @@ export function Game() {
   )
 
   const goToMenu = useCallback(() => {
+    trackAbandoned(screenRef.current, worldRef.current, 'menu')
     soundRef.current?.stopAll()
     worldRef.current = createWorld(LEVELS[0])
     fxRef.current = createEffects()
@@ -271,6 +289,16 @@ export function Game() {
       if (current.name !== 'play') return
       const stars = starsFor(world)
       setProgress(recordRun(world.level.id, stars, world.raceTime))
+      track('level_finished', {
+        level_id: world.level.id,
+        time: world.raceTime,
+        par: world.level.par,
+        stars,
+        cans: world.cansTaken,
+        total_cans: world.cans.length,
+        harmonies: world.harmonies,
+        wipeouts: world.wipeouts,
+      })
       setResult({
         levelIndex: current.levelIndex,
         time: world.raceTime,

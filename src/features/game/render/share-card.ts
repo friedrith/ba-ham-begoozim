@@ -14,7 +14,6 @@ const GAME_URL = 'gooz.zendegi.io'
 
 export type ShareCardRun = {
   rank: RankId
-  trophy: boolean
   stars: number
   levelName: string
   time: number
@@ -103,43 +102,6 @@ function drawCrown(
   ctx.restore()
 }
 
-/** A plain gold cup with the yellow bean on top. The name does the joke, not the shape. */
-function drawTrophy(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  scale: number,
-) {
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.scale(scale, scale)
-  ctx.fillStyle = MUSTARD
-  ctx.strokeStyle = INK
-  ctx.lineWidth = 3
-  ctx.lineJoin = 'round'
-  for (const side of [-1, 1]) {
-    ctx.beginPath()
-    ctx.moveTo(side * 12, -11)
-    ctx.bezierCurveTo(side * 26, -13, side * 24, 7, side * 7, 5)
-    ctx.stroke()
-  }
-  ctx.beginPath()
-  ctx.moveTo(-14, -14)
-  ctx.lineTo(14, -14)
-  ctx.bezierCurveTo(14, 2, 7, 8, 3, 9)
-  ctx.lineTo(3, 14)
-  ctx.lineTo(10, 20)
-  ctx.lineTo(-10, 20)
-  ctx.lineTo(-3, 14)
-  ctx.lineTo(-3, 9)
-  ctx.bezierCurveTo(-7, 8, -14, 2, -14, -14)
-  ctx.closePath()
-  ctx.fill()
-  ctx.stroke()
-  ctx.restore()
-  drawBean(ctx, 1, x, y - 22 * scale, scale * 0.55)
-}
-
 /** The square picture players post. Everything on it is from this device, nothing is sent. */
 export function drawShareCard(
   canvas: HTMLCanvasElement,
@@ -175,13 +137,7 @@ export function drawShareCard(
   drawBean(ctx, 3, center + 300, 270, 3.6)
   drawBean(ctx, 2, center - 165, 300, 4)
   drawBean(ctx, 1, center + 165, 300, 4)
-  if (run.trophy) {
-    drawTrophy(ctx, center, 295, 3.5)
-    ctx.fillStyle = SAUCE
-    fitText(ctx, t.trophy, center, 392, textWidth, 36, fonts.display)
-  }
-  // Every star means every level, so the crown always has the trophy's bean to sit on.
-  if (king) drawCrown(ctx, center, 168, 2.5)
+  if (king) drawCrown(ctx, center, 262, 5)
 
   ctx.fillStyle = INK
   fitText(ctx, t.ranks[run.rank], center, 474, textWidth, 112, fonts.display)

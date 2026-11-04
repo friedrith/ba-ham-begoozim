@@ -91,7 +91,7 @@ export type Messages = {
   }
   /** Earned by total stars, lowest first. */
   ranks: Record<RankId, string>
-  /** Earned by finishing every level. */
+  /** A secret, earned by finishing every level. Only its owner ever sees the name. */
   trophy: string
   /** One goes to each bean at the end of a race. `detail` gets the winning score. */
   awards: Record<AwardId, { title: string; detail: (value: string) => string }>

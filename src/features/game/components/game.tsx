@@ -498,7 +498,6 @@ export function Game() {
         trophyUnlocked: hasTrophy(after) && !hasTrophy(before),
         card: {
           rank,
-          trophy: hasTrophy(after),
           stars: totalStars(after),
           levelName: tRef.current.levels[world.level.id].name,
           time: world.raceTime,

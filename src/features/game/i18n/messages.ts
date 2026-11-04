@@ -158,6 +158,7 @@ export type Messages = {
     go: string
     smash: string
     skid: string
+    soak: string
   }
   /** In seat order: front left, front right, rear left, rear right. */
   seats: readonly [SeatText, SeatText, SeatText, SeatText]

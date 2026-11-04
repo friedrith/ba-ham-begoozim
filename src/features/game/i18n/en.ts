@@ -183,6 +183,7 @@ export const en: Messages = {
     go: 'BLAST!',
     smash: 'CRASH!',
     skid: 'WHEEE!',
+    soak: 'SQUELCH!',
   },
   seats: [
     { name: 'Front left', key: 'Q' },
@@ -193,17 +194,20 @@ export const en: Messages = {
   levels: {
     'bathwater-bend': {
       name: 'Bathwater Bend',
-      blurb: 'Soapy, warm and forgiving. Learn to steer before anyone gets hurt.',
+      blurb:
+        'Soapy, warm and forgiving. Learn to steer, and stand clear when a samovar boils.',
       hint: 'Rear beans push you forward. Blast both at once for a harmony!',
     },
     'storm-drain': {
       name: 'Storm Drain',
-      blurb: 'Sliding gates, spinning paddles and a current with a grudge.',
+      blurb:
+        'Sliding gates, spinning paddles and soggy carpets that grip the tub like mud.',
       hint: 'Front beans push you backward. Use them to brake and spin on the spot.',
     },
     'boiler-room': {
       name: 'The Boiler Room',
-      blurb: 'Open flames and open plumbing. Blast near a flame and hold on tight.',
+      blurb:
+        'Pilot lights give you a boost. Chaharshanbe Suri bonfires do not. Learn which is which.',
       hint: 'Blasting next to a pilot light ignites you for a huge boost. Whoosh.',
     },
     'grout-line': {
@@ -237,7 +241,7 @@ export const en: Messages = {
     'cold-snap': {
       name: 'Cold Snap',
       blurb:
-        'Somebody left the freezer open. The ceiling is starting to drop things.',
+        'Somebody left the freezer open. Icicles are dropping, and the Yalda pomegranates got loose.',
       hint: 'A shadow on the water means an icicle is coming down. Do not be under it.',
     },
     'black-ice': {

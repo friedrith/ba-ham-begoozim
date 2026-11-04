@@ -88,6 +88,16 @@ export class Sound {
         this.whoosh(0.5, 9000)
         this.tone(900, 1300, 0.3, 'sine', 0.06)
         break
+      case 'soak':
+        this.tone(240, 90, 0.22, 'sine', 0.18)
+        break
+      case 'steam':
+        this.whoosh(0.7, 7000)
+        break
+      case 'kindle':
+        this.whoosh(0.45, 1800)
+        this.tone(170, 70, 0.3, 'sawtooth', 0.04)
+        break
       case 'bump':
         this.tone(110, 50, 0.16, 'sine', Math.min(0.5, event.force / 400))
         break

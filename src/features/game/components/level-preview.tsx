@@ -20,6 +20,9 @@ const DOT_COLORS: Partial<Record<LevelItem['kind'], string>> = {
   flame: 'var(--color-sauce)',
   icicle: 'var(--color-cream)',
   whirl: 'var(--color-mustard)',
+  samovar: 'var(--color-mustard)',
+  atash: 'var(--color-sauce)',
+  anar: 'var(--color-sauce)',
 }
 
 /** Courses climb the map, so they lie on their side to fit a wide picture. */
@@ -74,6 +77,22 @@ function Item({
           points={stretch(course, item.from, item.to)}
           fill={PALETTES[level.theme].waterDeep}
         />
+      )
+    case 'farsh':
+      return (
+        <polygon
+          points={points([
+            pointAt(course, item.from, item.offset - item.width),
+            pointAt(course, item.to, item.offset - item.width),
+            pointAt(course, item.to, item.offset + item.width),
+            pointAt(course, item.from, item.offset + item.width),
+          ])}
+          fill="#9b2226"
+        />
+      )
+    case 'anar':
+      return (
+        <Bar a={pointAt(course, item.at, -0.7)} b={pointAt(course, item.at, 0.7)} />
       )
     case 'gate':
       return (

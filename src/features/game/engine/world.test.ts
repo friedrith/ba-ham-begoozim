@@ -1,8 +1,15 @@
 import { describe, expect, test } from 'bun:test'
 
 import { autopilot } from './autopilot'
-import { bankAt, buildCourse, indexAt } from './course'
-import { LEVELS, SCENERY_GAP, SCENERY_RADIUS, type LevelDef } from './levels'
+import { bankAt, bankLine, buildCourse, indexAt } from './course'
+import {
+  LEVELS,
+  SCENERY_GAP,
+  SCENERY_RADIUS,
+  sceneryRuns,
+  type LevelDef,
+  type Scenery,
+} from './levels'
 import {
   createWorld,
   forwardOf,
@@ -304,10 +311,44 @@ describe('levels', () => {
     })
   }
 
-  test('every level after The Boiler Room has a shelang', () => {
+  for (const level of LEVELS) {
+    test(`${level.id} keeps its scenery lines on the bank`, () => {
+      const course = buildCourse(level.path)
+      for (const { from, to, side } of sceneryRuns(level.scenery ?? [])) {
+        for (const { x, y } of bankLine(course, from, to, side, SCENERY_GAP)) {
+          for (const s of course.samples) {
+            expect(Math.hypot(x - s.x, y - s.y)).toBeGreaterThan(s.hw + 16)
+          }
+        }
+      }
+    })
+  }
+
+  test('every line after The Boiler Room ends at a shelang', () => {
     const start = LEVELS.findIndex((level) => level.id === 'boiler-room') + 1
     for (const level of LEVELS.slice(start)) {
-      expect(level.scenery?.some((item) => item.kind === 'shelang')).toBe(true)
+      const scenery = level.scenery ?? []
+      const runs = sceneryRuns(scenery)
+      expect(runs.length).toBe(2)
+      for (const { to, side } of runs) {
+        const last = scenery.find((item) => item.at === to && item.side === side)
+        expect(last?.kind).toBe('shelang')
+      }
+    }
+  })
+
+  test('scenery belongs to the theme of its level', () => {
+    const shared: Scenery['kind'][] = ['shelang', 'dampayi', 'aftabeh']
+    const own: Record<LevelDef['theme'], Scenery['kind'][]> = {
+      tile: ['kashi', 'tas'],
+      brick: ['qanat', 'badgir'],
+      iron: ['manba', 'tolombeh', 'abgarmkon'],
+      frost: ['yakhchal', 'hawz', 'sarv'],
+    }
+    for (const level of LEVELS) {
+      for (const item of level.scenery ?? []) {
+        expect([...shared, ...own[level.theme]]).toContain(item.kind)
+      }
     }
   })
 

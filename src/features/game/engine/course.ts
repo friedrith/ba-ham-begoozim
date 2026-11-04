@@ -93,6 +93,14 @@ export function indexAt(course: Course, at: number) {
   return Math.round(at * (course.samples.length - 1))
 }
 
+/** Where direction arrows sit, every `spacing` samples and clear of both ends. */
+export function arrowIndices(course: Course, spacing: number) {
+  const indices: number[] = []
+  const end = course.samples.length - 1 - spacing / 2
+  for (let i = spacing / 2; i < end; i += spacing) indices.push(Math.round(i))
+  return indices
+}
+
 /** A point `at` (0–1) along the course, `offset` (-1 left bank, 1 right bank) across. */
 export function pointAt(course: Course, at: number, offset = 0): Vec {
   const s = course.samples[indexAt(course, at)]

@@ -1,3 +1,4 @@
+import { arrowIndices } from '../engine/course'
 import type { Theme } from '../engine/levels'
 import {
   ANAR_RADIUS,
@@ -45,6 +46,8 @@ export const BEAN_COLORS = ['#e4572e', '#f2b632', '#2ec4b6', '#a05195']
 export const BEAN_ICON_PATH =
   'M-14-3C-18-20 18-20 14-3C19 12 8 18 3 11C1 8-1 8-3 11C-8 18-19 12-14-3Z'
 const INK = '#2b1a12'
+const ARROW_SPACING = 12
+const ARROW_GAP = 50
 
 type Palette = {
   bank: string
@@ -412,6 +415,43 @@ function drawWater(
     }
   }
   ctx.restore()
+}
+
+/** Chevrons on both banks point the way to the finish, where nothing can cover them. */
+function drawArrows(
+  ctx: CanvasRenderingContext2D,
+  world: World,
+  palette: Palette,
+  bounds: { x0: number; y0: number; x1: number; y1: number },
+) {
+  const { samples } = world.course
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  for (const i of arrowIndices(world.course, ARROW_SPACING)) {
+    const s = samples[i]
+    for (const side of [-1, 1]) {
+      const x = s.x + s.nx * side * (s.hw + ARROW_GAP)
+      const y = s.y + s.ny * side * (s.hw + ARROW_GAP)
+      if (x < bounds.x0 - 100 || x > bounds.x1 + 100) continue
+      if (y < bounds.y0 - 100 || y > bounds.y1 + 100) continue
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.rotate(Math.atan2(s.ty, s.tx))
+      for (const [color, width] of [
+        [INK, 16],
+        [palette.water, 8],
+      ] as const) {
+        ctx.strokeStyle = color
+        ctx.lineWidth = width
+        ctx.beginPath()
+        ctx.moveTo(-18, -26)
+        ctx.lineTo(8, 0)
+        ctx.lineTo(-18, 26)
+        ctx.stroke()
+      }
+      ctx.restore()
+    }
+  }
 }
 
 function drawBanding(
@@ -1117,6 +1157,8 @@ export function drawScene(
     y < bounds.y1 + margin
 
   drawBank(ctx, world.level.theme, palette, bounds)
+  // Before the water, so that a tight bend hides any arrow that lands in the channel.
+  drawArrows(ctx, world, palette, bounds)
   drawWater(ctx, world, palette, bounds)
 
   const { left, right } = world.course

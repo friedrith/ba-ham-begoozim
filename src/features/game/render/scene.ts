@@ -417,16 +417,24 @@ function drawWater(
   ctx.restore()
 }
 
-/** Chevrons on both banks point the way to the finish, where nothing can cover them. */
+/**
+ * Chevrons on both banks point the way to the finish, where nothing can cover them.
+ * They only fade in while the tub is heading too far the wrong way.
+ */
 function drawArrows(
   ctx: CanvasRenderingContext2D,
   world: World,
   palette: Palette,
   bounds: { x0: number; y0: number; x1: number; y1: number },
+  opacity: number,
 ) {
-  const { samples } = world.course
+  // Later strokes rely on these round ends, whether or not the arrows show.
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
+  if (opacity <= 0) return
+  const { samples } = world.course
+  ctx.save()
+  ctx.globalAlpha = opacity
   for (const i of arrowIndices(world.course, ARROW_SPACING)) {
     const s = samples[i]
     for (const side of [-1, 1]) {
@@ -452,6 +460,7 @@ function drawArrows(
       ctx.restore()
     }
   }
+  ctx.restore()
 }
 
 function drawBanding(
@@ -1158,7 +1167,7 @@ export function drawScene(
 
   drawBank(ctx, world.level.theme, palette, bounds)
   // Before the water, so that a tight bend hides any arrow that lands in the channel.
-  drawArrows(ctx, world, palette, bounds)
+  drawArrows(ctx, world, palette, bounds, fx.arrows)
   drawWater(ctx, world, palette, bounds)
 
   const { left, right } = world.course

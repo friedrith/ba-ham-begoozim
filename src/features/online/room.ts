@@ -37,7 +37,11 @@ const MAX_CATCH_UP_MS = 250
 /** How long a press may claim to be late. Co-op, so this only has to stop nonsense. */
 const MAX_LATE_S = 0.25
 const MAX_QUEUED_EDGES = 32
-/** How long a dropped player keeps their seat before a bot or teammate can have it. */
+/**
+ * How long a dropped player's seat sits still before a bot drives it for them. The seat
+ * stays theirs however long they're gone: phones drop their socket whenever they sleep,
+ * so a teammate's seat must not go to whoever presses it first.
+ */
 export const SEAT_HOLD_MS = 15_000
 /** A race nobody has touched for this long goes back to the lobby and stops billing. */
 export const IDLE_RACE_MS = 5 * 60_000
@@ -115,7 +119,6 @@ export class Room {
   private housekeepingDue = 0
   private lastInputAt = 0
   private wasRunning = false
-  private lastSeats = ''
   /** Unknown after a reset, when the count may still be holding this room's players. */
   private lastReported: number | null = null
   private largestGap = 0
@@ -354,22 +357,13 @@ export class Room {
     this.save()
   }
 
-  /** A seat is free if nobody has it, or its owner's hold ran out. */
+  /** Only a seat nobody has. One stays with its owner until they give it up or leave. */
   private claim(token: string, seat: number) {
     if (this.saved.seats[seat] === token) return true
     const status = this.seatStatus(seat)
     if (status === 'here' || status === 'away') return false
-    const previous = this.saved.seats[seat]
     this.saved.seats[seat] = token
-    if (previous) this.forgetIfSeatless(previous)
     return true
-  }
-
-  private forgetIfSeatless(token: string) {
-    const player = this.saved.players[token]
-    if (player?.goneAt !== null && !this.saved.seats.includes(token)) {
-      delete this.saved.players[token]
-    }
   }
 
   private input(token: string, seat: number, on: boolean, at: number) {
@@ -447,7 +441,7 @@ export class Room {
       }
       const status = this.seatStatus(seat)
       if (status === 'here') wants[seat] = this.held[seat]
-      if (status === 'bot') {
+      if (status === 'bot' || this.botStandsIn(seat)) {
         botWants ??= autopilot(world)
         wants[seat] = botWants[seat]
       }
@@ -458,11 +452,20 @@ export class Room {
   private seatStatus(seat: number): SeatStatus {
     const owner = this.saved.seats[seat]
     const player = owner ? this.saved.players[owner] : null
-    if (player) {
-      if (player.goneAt === null) return 'here'
-      if (this.host.now() - player.goneAt < SEAT_HOLD_MS) return 'away'
-    }
+    if (player) return player.goneAt === null ? 'here' : 'away'
     return this.saved.bots ? 'bot' : 'free'
+  }
+
+  /** Whether a bot drives a seat for its owner, who has been gone a while. */
+  private botStandsIn(seat: number) {
+    const owner = this.saved.seats[seat]
+    const goneAt = owner ? this.saved.players[owner]?.goneAt : null
+    return (
+      this.saved.bots &&
+      goneAt !== null &&
+      goneAt !== undefined &&
+      this.host.now() - goneAt >= SEAT_HOLD_MS
+    )
   }
 
   private seatViews(): SeatView[] {
@@ -485,8 +488,6 @@ export class Room {
     this.housekeepingDue = now + HOUSEKEEPING_MS
     this.largestGap = this.gapThisSecond
     this.gapThisSecond = 0
-    // Holds expire with no message to trigger an update, so look for them here.
-    if (JSON.stringify(this.seatViews()) !== this.lastSeats) this.announce()
     if (this.running() && now - this.lastInputAt > IDLE_RACE_MS) this.backToLobby()
     this.syncTicking()
   }
@@ -503,7 +504,6 @@ export class Room {
 
   private announce() {
     const seats = this.seatViews()
-    this.lastSeats = JSON.stringify(seats)
     const view: Omit<RoomView, 'you'> = {
       code: this.saved.code,
       phase: this.world ? 'race' : 'lobby',
@@ -571,11 +571,6 @@ export class Room {
     )
   }
 
-  /** Whether a seat is being kept for someone, which has to run out with no message. */
-  private holdingSeat() {
-    return SEATS.some((_, seat) => this.seatStatus(seat) === 'away')
-  }
-
   private syncTicking() {
     const running = this.running()
     if (running && !this.wasRunning) {
@@ -583,10 +578,9 @@ export class Room {
       this.lastInputAt = this.host.now()
     }
     this.wasRunning = running
-    const wanted = running || this.holdingSeat()
-    if (wanted === this.ticking) return
-    this.ticking = wanted
-    if (wanted) this.lastTick = this.host.now()
-    this.host.setTicking(wanted)
+    if (running === this.ticking) return
+    this.ticking = running
+    if (running) this.lastTick = this.host.now()
+    this.host.setTicking(running)
   }
 }

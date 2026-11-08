@@ -207,8 +207,6 @@ export const en: Messages = {
     backToRoom: 'Back to the room',
     raceGoesOn: 'The race carries on without you!',
     reconnecting: 'Connection lost. Reconnecting…',
-    seatLost: (seat) =>
-      `Someone took ${seat} while you were away. Press a free corner to jump back in.`,
   },
   fx: {
     toots: ['TOOT!', 'PARP!', 'PFFT!', 'BRRT!', 'FWEEP!', 'POOT!'],

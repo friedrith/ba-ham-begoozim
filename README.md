@@ -37,9 +37,9 @@ gas back, and a chord.
 
 Choose **Make a room** in the menu and send your friends the link, or the six-digit
 code. Everyone picks the beans they want, and one person can work several. Bots can
-fill the seats nobody took. If someone's connection drops, their seat waits 15 seconds
-for them, then a bot or a teammate can have it, and reloading the page gets it back
-if nobody has.
+fill the seats nobody took. If someone's connection drops, say because their phone
+went to sleep, their seat stays theirs until they come back or leave the room. After
+15 seconds a bot drives it for them, if bots are on.
 
 Online play needs a small backend, and stays hidden until one is set up. See
 [workers/rooms](workers/rooms/README.md) for running it locally and deploying it.

@@ -60,8 +60,6 @@ export type SessionState = {
   status: 'connecting' | 'open' | 'reconnecting' | 'closed'
   error: SessionError | null
   room: RoomView | null
-  /** A seat this player had, which someone else took while they were away. */
-  lostSeat: number | null
   rtt: number
   tickGap: number
   /** Oldest first. Includes this player's own, once the room has passed them on. */
@@ -130,7 +128,6 @@ export class OnlineSession {
     status: 'connecting',
     error: null,
     room: null,
-    lostSeat: null,
     rtt: 0,
     tickGap: 0,
     shouts: [],
@@ -167,7 +164,6 @@ export class OnlineSession {
   private mySeats = new Set<number>()
   private held = SEATS.map(() => false)
   private sent = SEATS.map(() => false)
-  private released = new Set<number>()
 
   private predicted = SEATS.map(() => false)
   private blastEchoes: number[][] = SEATS.map(() => [])
@@ -315,10 +311,7 @@ export class OnlineSession {
   }
 
   toggleSeat(seat: number) {
-    const take = !this.mySeats.has(seat)
-    if (!take) this.released.add(seat)
-    this.send({ t: 'seat', seat, take })
-    if (take && this.state.lostSeat === seat) this.update({ lostSeat: null })
+    this.send({ t: 'seat', seat, take: !this.mySeats.has(seat) })
   }
 
   setName(name: string) {
@@ -478,18 +471,11 @@ export class OnlineSession {
     view.seats.forEach((seat, i) => {
       if (seat.owner === view.you) mine.add(i)
     })
-
-    let lostSeat = this.state.lostSeat
-    for (const seat of this.mySeats) {
-      if (!mine.has(seat) && !this.released.has(seat)) lostSeat = seat
-    }
-    this.released.clear()
     this.mySeats = mine
 
     const raceChanged =
       view.raceId !== before?.raceId || view.phase !== before.phase
     if (raceChanged) {
-      lostSeat = null
       this.world =
         view.phase === 'race'
           ? createWorld(
@@ -507,7 +493,6 @@ export class OnlineSession {
     }
     this.update({
       room: view,
-      lostSeat,
       shouts: raceChanged ? [] : this.state.shouts,
     })
     this.flushHeld()

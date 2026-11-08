@@ -963,11 +963,6 @@ export function Game() {
                   {t.online.reconnecting}
                 </output>
               )}
-              {online.lostSeat !== null && (
-                <output className="bg-cream border-ink rounded-xl border-2 px-3 py-1 text-center text-sm font-bold">
-                  {t.online.seatLost(t.seats[online.lostSeat].name)}
-                </output>
-              )}
               {shoutsOpen && !paused && !result && (
                 <ShoutButtons t={t} session={session} />
               )}

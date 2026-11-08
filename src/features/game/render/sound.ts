@@ -11,30 +11,53 @@ export class Sound {
   private master: GainNode | null = null
   private noise: AudioBuffer | null = null
   private voices: (Voice | null)[] = [null, null, null, null]
+  /** Set while the tab is hidden: the context may not survive it. */
+  private stale = false
   muted = false
 
   /** Browsers only allow audio after a gesture, so call this from one. */
   unlock() {
-    if (!this.ctx) {
-      // iOS otherwise treats Web Audio as ambient, which the ringer switch silences.
-      const { audioSession } = navigator as Navigator & {
-        audioSession?: { type: string }
-      }
-      if (audioSession) audioSession.type = 'playback'
-      this.ctx = new AudioContext()
-      this.master = this.ctx.createGain()
-      this.master.gain.value = this.muted ? 0 : 0.7
-      this.master.connect(this.ctx.destination)
-      this.noise = this.ctx.createBuffer(
-        1,
-        this.ctx.sampleRate,
-        this.ctx.sampleRate,
-      )
-      const data = this.noise.getChannelData(0)
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
-    }
+    const ctx =
+      !this.ctx || this.stale || this.ctx.state === 'closed'
+        ? this.build()
+        : this.ctx
     // Safari also has an 'interrupted' state, which it enters when the tab is hidden.
-    if (this.ctx.state !== 'running') void this.ctx.resume()
+    if (ctx.state !== 'running') ctx.resume().catch(() => {})
+  }
+
+  /**
+   * A context that went through a hidden tab can stay silent when it comes back,
+   * Safari's even while it claims to be running, so the next unlock starts afresh.
+   */
+  hide() {
+    if (!this.ctx) return
+    this.stopAll()
+    this.stale = true
+  }
+
+  /** Browsers that remember the earlier gesture let audio restart right away. */
+  show() {
+    if (this.stale) this.unlock()
+  }
+
+  private build() {
+    this.stopAll()
+    void this.ctx?.close().catch(() => {})
+    this.stale = false
+    // iOS otherwise treats Web Audio as ambient, which the ringer switch silences.
+    const { audioSession } = navigator as Navigator & {
+      audioSession?: { type: string }
+    }
+    if (audioSession) audioSession.type = 'playback'
+    const ctx = new AudioContext()
+    this.ctx = ctx
+    this.master = ctx.createGain()
+    this.master.gain.value = this.muted ? 0 : 0.7
+    this.master.connect(ctx.destination)
+    this.noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate)
+    const data = this.noise.getChannelData(0)
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
+    return ctx
   }
 
   setMuted(muted: boolean) {

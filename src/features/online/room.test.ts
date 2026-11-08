@@ -486,46 +486,64 @@ describe('disconnects', () => {
     expect(worldSeenBy(again).seats[3].blasting).toBe(true)
   })
 
-  test('a teammate cannot take a held seat, but can once the hold runs out', () => {
+  test('a teammate cannot take a dropped player’s seat, however long they’re gone', () => {
     const { a, b } = raceWithTwo()
     drop(b)
-    say(a, { t: 'in', seat: 3, on: true, at: now })
-    run(50)
-    expect(worldSeenBy(a).seats[3].held).toBe(false)
-    expect(a.last('room')?.seats[3].status).toBe('away')
-
-    run(SEAT_HOLD_MS)
-    expect(a.last('room')?.seats[3].status).toBe('free')
-    say(a, { t: 'in', seat: 3, on: true, at: now })
-    run(50)
-    expect(worldSeenBy(a).seats[3].held).toBe(true)
-    expect(a.last('room')?.seats[3]).toEqual({ owner: 1, status: 'here' })
+    for (const wait of [0, SEAT_HOLD_MS * 4]) {
+      run(wait)
+      say(a, { t: 'in', seat: 3, on: true, at: now })
+      run(50)
+      expect(worldSeenBy(a).seats[3].held).toBe(false)
+      expect(a.last('room')?.seats[3]).toEqual({ owner: 2, status: 'away' })
+    }
   })
 
-  test('a bot takes over once the hold runs out, if bots are on', () => {
+  test('nobody takes a sleeping phone’s seat in the lobby either', () => {
+    const a = join('a')
+    const b = join('b')
+    const c = join('c')
+    say(b, { t: 'seat', seat: 1, take: true })
+    say(c, { t: 'seat', seat: 2, take: true })
+    drop(b)
+    drop(c)
+    run(SEAT_HOLD_MS * 4)
+    // Coming back, the third player can have their own seat but not the second’s.
+    const again = join('c')
+    say(again, { t: 'seat', seat: 1, take: true })
+    say(a, { t: 'seat', seat: 1, take: true })
+    expect(again.last('room')?.seats[1]).toEqual({ owner: 2, status: 'away' })
+    expect(again.last('room')?.seats[2]).toEqual({ owner: 3, status: 'here' })
+    const back = join('b')
+    expect(back.last('room')?.seats[1]).toEqual({ owner: 2, status: 'here' })
+  })
+
+  test('a bot drives a dropped player’s seat for them once the hold runs out', () => {
     const { a, b } = raceWithTwo()
     say(a, { t: 'bots', on: true })
     drop(b)
-    expect(a.last('room')?.seats[3].status).toBe('away')
-    run(SEAT_HOLD_MS + 1100)
-    expect(a.last('room')?.seats[3].status).toBe('bot')
+    const blasts = () =>
+      a.received.filter(
+        (message) =>
+          message.t === 'snap' &&
+          message.ev.some((event) => event.type === 'blast' && event.seat === 3),
+      ).length
+    run(SEAT_HOLD_MS - 100)
+    expect(blasts()).toBe(0)
+    run(20_000)
+    expect(blasts()).toBeGreaterThan(0)
+    expect(a.last('room')?.seats[3]).toEqual({ owner: 2, status: 'away' })
   })
 
-  test('a hold runs out in the lobby too, with nothing else going on', () => {
+  test('a seat waiting in the lobby doesn’t keep the room awake', () => {
     const a = join('a')
     const b = join('b')
     say(b, { t: 'seat', seat: 3, take: true })
     drop(b)
     expect(a.last('room')?.seats[3].status).toBe('away')
-    run(SEAT_HOLD_MS + 1100)
-    expect(a.last('room')?.seats[3].status).toBe('bot')
-    say(a, { t: 'seat', seat: 3, take: true })
-    expect(a.last('room')?.seats[3]).toEqual({ owner: 1, status: 'here' })
-    // Nothing to wait for now, so the room can hibernate.
     expect(ticking).toBe(false)
   })
 
-  test('a late return still reclaims a seat nobody took', () => {
+  test('a late return still gets the seat back', () => {
     const { b } = raceWithTwo()
     drop(b)
     run(SEAT_HOLD_MS * 2)
@@ -538,9 +556,9 @@ describe('disconnects', () => {
     drop(a)
     drop(b)
     const clock = saved?.world
-    run(SEAT_HOLD_MS + 1100)
-    // Timers can stop too, now that no seats are being held.
+    // Nobody is there to race, so the timers stop.
     expect(ticking).toBe(false)
+    run(SEAT_HOLD_MS + 1100)
     now += 60_000
     const again = join('a')
     expect(ticking).toBe(true)

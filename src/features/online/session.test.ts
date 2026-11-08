@@ -532,23 +532,26 @@ describe('connection trouble', () => {
     expect(b.session.display(0)?.seats[3].held).toBe(true)
   })
 
-  test('says so when someone took the seat in the meantime', () => {
+  test('a phone that slept comes back to its seat, whatever teammates pressed', () => {
     const { a, b } = raceWithTwo()
     b.offline = true
     b.sockets[0].cut()
     run(SEAT_HOLD_MS + 1500)
     a.session.setHeld(holding(2, 3))
     run(200)
-    expect(a.session.getState().room?.seats[3].owner).toBe(1)
+    expect(a.session.getState().room?.seats[3]).toEqual({
+      owner: 2,
+      status: 'away',
+    })
 
     b.offline = false
     run(6000)
     const state = b.session.getState()
     expect(state.status).toBe('open')
-    expect(state.lostSeat).toBe(3)
+    expect(state.room?.seats[3]).toEqual({ owner: 2, status: 'here' })
   })
 
-  test('giving a seat up on purpose is not reported as losing it', () => {
+  test('a seat can be given up on purpose', () => {
     const a = join('a')
     run(100)
     seats(a, 2)
@@ -556,7 +559,6 @@ describe('connection trouble', () => {
     a.session.toggleSeat(2)
     run(100)
     expect(a.session.getState().room?.seats[2].owner).toBeNull()
-    expect(a.session.getState().lostSeat).toBeNull()
   })
 
   test('leaving closes the session and frees the seats', () => {

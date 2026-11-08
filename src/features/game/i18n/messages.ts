@@ -157,7 +157,6 @@ export type Messages = {
     backToRoom: string
     raceGoesOn: string
     reconnecting: string
-    seatLost: (seat: string) => string
   }
   /** Words that pop up on the canvas. */
   fx: {

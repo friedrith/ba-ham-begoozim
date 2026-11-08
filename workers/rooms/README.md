@@ -76,13 +76,13 @@ To deploy on every merge, add the repository secrets `CLOUDFLARE_API_TOKEN` and
 
 ## Limits and cost
 
-| Thing               | Limit                                                      |
-| ------------------- | ---------------------------------------------------------- |
-| Devices in a room   | 8                                                          |
-| Messages            | 200 a second per device, 512 characters each               |
-| A dropped seat      | Held for 15 seconds, then a bot or anyone else can have it |
-| A race nobody plays | Back to the lobby after 5 minutes                          |
-| An empty room       | Deleted after an hour                                      |
+| Thing               | Limit                                                |
+| ------------------- | ---------------------------------------------------- |
+| Devices in a room   | 8                                                    |
+| Messages            | 200 a second per device, 512 characters each         |
+| A dropped seat      | Kept for its owner; a bot drives it after 15 seconds |
+| A race nobody plays | Back to the lobby after 5 minutes                    |
+| An empty room       | Deleted after an hour                                |
 
 A race costs about $0.006 per room-hour. The free plan covers about 29 room-hours a
 day, and the $5 paid plan includes 889 a month. Lobbies hibernate and cost almost

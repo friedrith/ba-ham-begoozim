@@ -51,6 +51,7 @@ import { awardsFor, createTally, tallyEvent, type Tally } from '../tally'
 import { loadTutorialSeen, needsTutorial, saveTutorialSeen } from '../tutorial'
 import { BeanFace } from './bean-face'
 import { FeedbackPanel } from './feedback-panel'
+import { LanguageButton } from './language-button'
 import {
   loadPlayerName,
   Lobby,
@@ -739,6 +740,7 @@ export function Game() {
           room={room}
           session={session}
           onStickers={() => setStickersOpenAt(raceId)}
+          onLocaleChange={setLocale}
           onLeave={leaveRoom}
         />
       )}
@@ -999,6 +1001,7 @@ export function Game() {
               ) : (
                 <PanelButton onClick={goToMenu}>{t.paused.menu}</PanelButton>
               )}
+              <LanguageButton t={t} onChange={setLocale} className="self-center" />
             </Panel>
           )}
 

@@ -11,16 +11,11 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { LEVELS } from '../engine/levels'
-import {
-  formatNumber,
-  formatTime,
-  MESSAGES,
-  type Locale,
-  type Messages,
-} from '../i18n'
+import { formatNumber, formatTime, type Locale, type Messages } from '../i18n'
 import { MAX_STARS, rankFor, totalStars, type Progress } from '../progress'
 import type { BeanStickers } from '../stickers'
 import { BeanFace } from './bean-face'
+import { LanguageButton } from './language-button'
 import { LevelPreview } from './level-preview'
 import { RichText } from './rich-text'
 
@@ -104,7 +99,6 @@ export function Menu({
   const [selected, setSelected] = useState(() => nextLevelIndex(progress))
   const selectedRef = useRef(selected)
   const stars = totalStars(progress)
-  const other = MESSAGES[t.locale === 'fa' ? 'en' : 'fa']
 
   /** The slider scrolls into negative numbers in right-to-left layouts. */
   const scrollPosition = useCallback(
@@ -198,14 +192,7 @@ export function Menu({
           >
             <Coffee aria-hidden="true" className="text-ink size-4" />
           </a>
-          <button
-            type="button"
-            lang={other.locale}
-            onClick={() => onLocaleChange(other.locale)}
-            className="bg-cream border-ink cursor-pointer rounded-full border-[3px] px-3 py-1 text-sm font-bold"
-          >
-            {other.languageName}
-          </button>
+          <LanguageButton t={t} onChange={onLocaleChange} />
         </div>
 
         <header className="flex flex-col items-center gap-1 text-center">

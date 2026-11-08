@@ -27,7 +27,8 @@ bun install && bun dev
 
 Playing solo? `←` and `→` work the rear seats and `↓` works both front seats. On
 a phone each bean owns a quarter of the screen, and on a tablet a pad in its corner:
-hold your corner to blast. `Esc` pauses, `R` restarts.
+hold your corner to blast. `Esc` pauses, `R` restarts. The first race a
+player starts opens with a short tutorial pointing at each bean's corner.
 
 Blast within a blink of another bean for a **harmony**: a bigger shove, a little
 gas back, and a chord.

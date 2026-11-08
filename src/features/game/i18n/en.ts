@@ -71,6 +71,21 @@ export const en: Messages = {
     holdCorner: 'Hold your corner to blast.',
     shout: 'Shout to your team',
   },
+  tutorial: {
+    title: 'Grab a bean!',
+    body: 'Each bean has its own key. **Hold** it to blast and let go to stop. Blast together to steer the tub.',
+    bodyTouch:
+      'Each bean owns a corner of the screen. **Hold** yours to blast and let go to stop. Blast together to steer the tub.',
+    holdHere: 'Hold here',
+    holdKey: (key) => `Hold \`${key}\``,
+    effects: [
+      'Pushes back, turns left',
+      'Pushes back, turns right',
+      'Pushes forward, turns right',
+      'Pushes forward, turns left',
+    ],
+    start: 'Got it!',
+  },
   shouts: {
     more: 'Fart more!',
     youMore: 'You fart more!',

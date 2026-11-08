@@ -35,15 +35,37 @@ export type Effects = {
   /** Seconds left of the squash-and-stretch on each bean. */
   squash: number[]
   wordIndex: number
+  /** How far the course arrows have faded in, from 0 (hidden) to 1. */
+  arrows: number
+  /** The furthest sample reached since the tub last headed downstream or jumped. */
+  peak: number
+  /** The tub's sample last frame, to tell a respawn from paddling. */
+  index: number
 }
 
 const MAX_PUFFS = 320
 const GAS_COLORS = ['#c9d65a', '#b4c94a', '#dfe07e']
 const FIRE_COLORS = ['#ffb627', '#ff7a1a', '#ffd166']
 const ICE_COLORS = ['#ffffff', '#d6f0fb', '#a8dcf2']
+/** Samples (24 apart) the tub may drift back before the arrows show the way. */
+const WRONG_WAY_SAMPLES = 8
+/** Downstream speed at which the tub counts as heading the right way again. */
+const RIGHT_WAY_SPEED = 40
+/** A bigger move in one frame is a respawn or a new race, not paddling. */
+const JUMP_SAMPLES = 20
+const ARROW_FADE = 4
 
 export function createEffects(): Effects {
-  return { puffs: [], words: [], shake: 0, squash: [0, 0, 0, 0], wordIndex: 0 }
+  return {
+    puffs: [],
+    words: [],
+    shake: 0,
+    squash: [0, 0, 0, 0],
+    wordIndex: 0,
+    arrows: 0,
+    peak: -1,
+    index: -1,
+  }
 }
 
 function spawnPuff(fx: Effects, puff: Omit<Puff, 'age'>) {
@@ -188,9 +210,29 @@ export function applyEvent(
   }
 }
 
+/** True once the tub has drifted too far back up the course, until it turns round. */
+export function trackWrongWay(fx: Effects, world: World) {
+  const index = world.sampleIndex
+  const s = world.course.samples[index]
+  const downstream = world.vx * s.tx + world.vy * s.ty
+  if (
+    fx.index < 0 ||
+    Math.abs(index - fx.index) > JUMP_SAMPLES ||
+    downstream > RIGHT_WAY_SPEED
+  )
+    fx.peak = index
+  fx.peak = Math.max(fx.peak, index)
+  fx.index = index
+  return world.status === 'racing' && fx.peak - index >= WRONG_WAY_SAMPLES
+}
+
 export function updateEffects(fx: Effects, world: World, dt: number) {
   fx.shake = Math.max(0, fx.shake - dt * 40)
   fx.squash = fx.squash.map((s) => Math.max(0, s - dt))
+  const arrows = trackWrongWay(fx, world) ? 1 : 0
+  fx.arrows +=
+    Math.sign(arrows - fx.arrows) *
+    Math.min(Math.abs(arrows - fx.arrows), dt * ARROW_FADE)
 
   world.seats.forEach((seat, i) => {
     if (seat.blasting && Math.random() < dt * 45)

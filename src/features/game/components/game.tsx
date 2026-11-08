@@ -469,12 +469,13 @@ export function Game() {
     const unlockSound = () => soundRef.current?.unlock()
     // Safari ignores user-scalable=no, so pinches have to be refused here too.
     const refuseGesture = (event: Event) => event.preventDefault()
-    const onHidden = () => {
-      if (
-        document.hidden &&
-        screenRef.current.name === 'play' &&
-        !pausedRef.current
-      ) {
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        soundRef.current?.show()
+        return
+      }
+      soundRef.current?.hide()
+      if (screenRef.current.name === 'play' && !pausedRef.current) {
         togglePause()
       }
     }
@@ -485,7 +486,7 @@ export function Game() {
     window.addEventListener('pointerup', unlockSound)
     window.addEventListener('touchend', unlockSound)
     document.addEventListener('gesturestart', refuseGesture)
-    document.addEventListener('visibilitychange', onHidden)
+    document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
@@ -494,7 +495,7 @@ export function Game() {
       window.removeEventListener('pointerup', unlockSound)
       window.removeEventListener('touchend', unlockSound)
       document.removeEventListener('gesturestart', refuseGesture)
-      document.removeEventListener('visibilitychange', onHidden)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [closeTutorial, racing, releaseAll, startLevel, syncHeld, togglePause])
 

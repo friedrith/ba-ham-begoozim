@@ -9,8 +9,9 @@ import {
 } from '../../online/protocol'
 import type { OnlineSession, SessionError } from '../../online/session'
 import { LEVELS } from '../engine/levels'
-import { formatNumber, setLinkLocale, type Messages } from '../i18n'
+import { formatNumber, setLinkLocale, type Locale, type Messages } from '../i18n'
 import { BeanFace } from './bean-face'
+import { LanguageButton } from './language-button'
 import { Panel, PanelButton } from './panel'
 
 const COPIED_MS = 2000
@@ -100,6 +101,7 @@ export function Lobby({
   room,
   session,
   onStickers,
+  onLocaleChange,
   onLeave,
 }: {
   t: Messages
@@ -107,6 +109,7 @@ export function Lobby({
   room: RoomView | null
   session: OnlineSession
   onStickers: () => void
+  onLocaleChange: (locale: Locale) => void
   onLeave: () => void
 }) {
   if (!room) {
@@ -125,6 +128,7 @@ export function Lobby({
       room={room}
       session={session}
       onStickers={onStickers}
+      onLocaleChange={onLocaleChange}
       onLeave={onLeave}
     />
   )
@@ -135,12 +139,14 @@ function RoomPanel({
   room,
   session,
   onStickers,
+  onLocaleChange,
   onLeave,
 }: {
   t: Messages
   room: RoomView
   session: OnlineSession
   onStickers: () => void
+  onLocaleChange: (locale: Locale) => void
   onLeave: () => void
 }) {
   const [level, setLevel] = useState(room.level)
@@ -254,6 +260,7 @@ function RoomPanel({
         {t.online.start}
       </PanelButton>
       <PanelButton onClick={onLeave}>{t.online.leave}</PanelButton>
+      <LanguageButton t={t} onChange={onLocaleChange} className="self-center" />
     </Panel>
   )
 }

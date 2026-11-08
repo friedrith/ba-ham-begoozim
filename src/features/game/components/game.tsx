@@ -48,6 +48,7 @@ import {
   type BeanStickers,
 } from '../stickers'
 import { awardsFor, createTally, tallyEvent, type Tally } from '../tally'
+import { loadTutorialSeen, needsTutorial, saveTutorialSeen } from '../tutorial'
 import { BeanFace } from './bean-face'
 import { FeedbackPanel } from './feedback-panel'
 import {
@@ -64,6 +65,7 @@ import { PlayersOnline } from './players-online'
 import { ShareButton } from './share-button'
 import { ShoutButtons, ShoutFeed } from './shouts'
 import { StickerPanel } from './sticker-panel'
+import { TutorialCallout, TutorialPanel } from './tutorial'
 
 const KEY_SEATS: Record<string, number[]> = {
   KeyQ: [0],
@@ -222,6 +224,11 @@ export function Game() {
   const [result, setResult] = useState<Result | null>(null)
   const [progress, setProgress] = useState<Progress>(loadProgress)
   const [touchMode, setTouchMode] = useState(startsInTouchMode)
+  /** Waits for the first race this device ever starts, to show where to press. */
+  const [tutorialOpen, setTutorialOpen] = useState(() =>
+    needsTutorial(loadTutorialSeen(), loadProgress()),
+  )
+  const tutorialRef = useRef(tutorialOpen)
   /** The shout buttons show until a player hides them to clear the screen. */
   const [shoutsOpen, setShoutsOpen] = useState(true)
   const [session, setSession] = useState<OnlineSession | null>(null)
@@ -298,13 +305,23 @@ export function Game() {
       releaseAll()
       setResult(null)
       setPaused(false)
-      pausedRef.current = false
+      // The first race holds its countdown until the tutorial is out of the way.
+      pausedRef.current = tutorialRef.current
       const next: Screen = { name: 'play', levelIndex }
       screenRef.current = next
       setScreen(next)
     },
     [releaseAll],
   )
+
+  /** Pressing a bean's pad or key closes it too, since that's what it asks for. */
+  const closeTutorial = useCallback(() => {
+    if (!tutorialRef.current) return
+    tutorialRef.current = false
+    setTutorialOpen(false)
+    saveTutorialSeen()
+    pausedRef.current = false
+  }, [])
 
   const goToMenu = useCallback(() => {
     trackAbandoned(screenRef.current, worldRef.current, 'menu')
@@ -414,6 +431,16 @@ export function Game() {
       ) {
         setTouchMode(false)
       }
+      if (tutorialRef.current && racing()) {
+        if (
+          KEY_SEATS[event.code] ||
+          ['Escape', 'Enter', 'Space'].includes(event.code)
+        ) {
+          event.preventDefault()
+          closeTutorial()
+        }
+        return
+      }
       if (event.code === 'Escape') {
         togglePause()
         return
@@ -468,7 +495,7 @@ export function Game() {
       document.removeEventListener('gesturestart', refuseGesture)
       document.removeEventListener('visibilitychange', onHidden)
     }
-  }, [racing, releaseAll, startLevel, syncHeld, togglePause])
+  }, [closeTutorial, racing, releaseAll, startLevel, syncHeld, togglePause])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -655,6 +682,9 @@ export function Game() {
         ? (LEVELS.find(({ id }) => id === room?.level) ?? LEVELS[0])
         : null
   const levelIndex = level ? LEVELS.indexOf(level) : 0
+  // Online it's only worth showing to someone with a bean of their own to press.
+  const showTutorial =
+    tutorialOpen && !!level && !paused && !result && (!inOnlineRace || mySeat >= 0)
   const hudButton = clsx(
     'bg-cream border-ink cursor-pointer rounded-full border-[3px]',
     touchMode ? 'p-3' : 'p-2',
@@ -742,6 +772,8 @@ export function Game() {
               roomSeat &&
               roomSeat.owner !== room?.you &&
               (roomSeat.status === 'here' || roomSeat.status === 'away')
+            const guided =
+              showTutorial && (!roomSeat || roomSeat.owner === room?.you)
             const owner = roomSeat && room && (
               <span className="max-w-full truncate text-xs leading-none font-bold">
                 {seatLabel(t, roomSeat, room.you)}
@@ -761,6 +793,7 @@ export function Game() {
                 tabIndex={-1}
                 onPointerDown={(event) => {
                   event.currentTarget.setPointerCapture(event.pointerId)
+                  closeTutorial()
                   setPad(i, event.pointerId, true)
                 }}
                 onPointerUp={(event) => setPad(i, event.pointerId, false)}
@@ -769,11 +802,14 @@ export function Game() {
                 className={clsx(
                   'absolute flex cursor-pointer',
                   someoneElse && 'opacity-60',
+                  // Lifted above the tutorial's backdrop, so it's the thing to press.
+                  guided && 'z-10',
                   touchMode
                     ? ['group', TOUCH_PADS[i]]
                     : [
                         'bg-cream/90 border-ink w-24 flex-col items-center gap-1 rounded-2xl border-[3px] p-2 active:brightness-90 md:w-28',
                         PAD_POSITIONS[i],
+                        guided && 'ring-mustard ring-4',
                       ],
                 )}
               >
@@ -784,6 +820,7 @@ export function Game() {
                       ? clsx(
                           'bg-cream/90 border-ink group-data-blasting:bg-mustard flex w-32 flex-col gap-2 p-3 md:w-44 md:p-4',
                           TOUCH_BADGES[i],
+                          guided && 'ring-mustard ring-4',
                         )
                       : 'contents'
                   }
@@ -821,6 +858,7 @@ export function Game() {
                     />
                   </span>
                 </span>
+                {guided && <TutorialCallout t={t} seat={i} touchMode={touchMode} />}
               </button>
             )
           })}
@@ -897,16 +935,19 @@ export function Game() {
             </div>
           </div>
 
-          <p
-            key={level.id}
-            className={clsx(
-              'animate-hint bg-cream border-ink pointer-events-none absolute left-1/2 w-max max-w-[85vw] -translate-x-1/2 rounded-xl border-2 px-3 py-1 text-center text-sm font-bold md:top-20 md:max-w-[50vw] md:text-base',
-              touchMode ? 'top-40 sm:top-20' : 'top-36',
-            )}
-          >
-            {touchMode && `${t.hud.holdCorner} `}
-            {t.levels[level.id].hint}
-          </p>
+          {/* Mounted after the tutorial, so the hint gets its full time on screen. */}
+          {!showTutorial && (
+            <p
+              key={level.id}
+              className={clsx(
+                'animate-hint bg-cream border-ink pointer-events-none absolute left-1/2 w-max max-w-[85vw] -translate-x-1/2 rounded-xl border-2 px-3 py-1 text-center text-sm font-bold md:top-20 md:max-w-[50vw] md:text-base',
+                touchMode ? 'top-40 sm:top-20' : 'top-36',
+              )}
+            >
+              {touchMode && `${t.hud.holdCorner} `}
+              {t.levels[level.id].hint}
+            </p>
+          )}
 
           {inOnlineRace && online && room && session && (
             <div
@@ -928,6 +969,10 @@ export function Game() {
                 <ShoutButtons t={t} session={session} />
               )}
             </div>
+          )}
+
+          {showTutorial && (
+            <TutorialPanel t={t} touchMode={touchMode} onClose={closeTutorial} />
           )}
 
           {paused && (

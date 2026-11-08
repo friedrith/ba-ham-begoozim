@@ -90,6 +90,19 @@ export type Messages = {
     /** Spoken name of the buttons that shout at the team, and of the one that shows them. */
     shout: string
   }
+  /** Shown over the first race a player ever starts, pointing at the beans' pads. */
+  tutorial: {
+    title: string
+    body: string
+    bodyTouch: string
+    /** Next to each pad in touch mode. */
+    holdHere: string
+    /** Next to each pad on the keyboard layout. */
+    holdKey: (key: string) => string
+    /** What each bean's blast does, in seat order. */
+    effects: readonly [string, string, string, string]
+    start: string
+  }
   /** What online players can shout at each other in a race. Keep them short. */
   shouts: Record<ShoutId, string>
   paused: { title: string; resume: string; restart: string; menu: string }
